@@ -4,13 +4,8 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { config, initializeConfig } from './config/index.js';
 import emailRoutes from './routes/emailRoutes.js';
-import walletRoutes from './routes/walletRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import trackingSystem from './services/walletMonitor.js';
 import authRoutes from './routes/authRoutes.js';
-import balanceRoutes from './routes/balance.js';
 import webhookRoutes from './routes/webhookRoutes.js';
-import stealthRoutes from './routes/stealthRoutes.js';
 import dotenv from 'dotenv';
 import sitemapRouter from './routes/sitemap.js';
 import { createClient } from 'redis';
@@ -68,13 +63,9 @@ app.use(bodyParser.json());
 
 // Routes
 app.use('/api/chatbot', chatRoutes);
-app.use('/api/balance', balanceRoutes);
 app.use('/api/emails', emailRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
-app.use('/api/stealth', stealthRoutes);
 app.use('/', sitemapRouter);
 
 // Health check route
@@ -91,24 +82,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+await verifySupabaseConnection();
+console.log('Supabase connection verified successfully!');
+
 // Start the server
 const PORT = config.port || 3000;
 
-async function startServer() {
-  try {
-    await trackingSystem.initializeTrackingOnStartup();
-    
-    app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-      console.log('Wallet tracking initialized successfully');
-    });
-  } catch (error) {
-    console.error('Failed to initialize wallet tracking:', error);
-    process.exit(1);
-  }
-}
-
-startServer();
 
 const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT'];
 

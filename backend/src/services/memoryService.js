@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
 import { PineconeClient } from 'pinecone-client';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { initializeConfig, config } from './config.js';
+import { config, initializeConfig } from '../config/index.js'; //
 
 // Ensure config is initialized before accessing environment variables
 await initializeConfig();

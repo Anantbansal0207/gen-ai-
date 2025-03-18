@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { initializeConfig, config } from './config.js';
+import { config, initializeConfig } from '../config/index.js'; //
 
 // Ensure the configuration is loaded before using it
 await initializeConfig();
