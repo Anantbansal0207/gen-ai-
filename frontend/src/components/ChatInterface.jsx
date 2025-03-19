@@ -1,60 +1,75 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { supabase } from '../utils/supabase1';
 import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
+import { checkAuthStatus, getSessionId } from '../services/authService';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-const ChatInterface = ({ user }) => {
+const ChatInterface = ({ user: propUser }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState(null);
-  const [currentUser, setCurrentUser] = useState(user);
+  const [currentUser, setCurrentUser] = useState(propUser);
   const messagesEndRef = useRef(null);
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Generate a unique session ID when component mounts
-    setSessionId(crypto.randomUUID());
-    
-    // Check for user on component mount
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      // First check if user was passed as prop
-      if (user) {
-        console.log("User provided via props:", user);
-        setCurrentUser(user);
-        return;
-      }
-      
-      // // If no user prop, try to get from supabase
-      // const { data, error } = await supabase.auth.getUser();
-      // console.log("Supabase getUser result:", { data, error });
-      
-      if (error) {
-        console.error("Error getting user:", error);
-        return;
-      }
-      
-      if (data?.user) {
-        console.log("Found authenticated user:", data.user);
-        setCurrentUser(data.user);
-      } else {
-        console.log("No authenticated user found");
-        // Optional: Show a toast notification that user needs to sign in
-        showError("Please sign in to use the chat.");
-        // Redirect to auth page
+    // Check user authentication status
+    const verifyUser = async () => {
+      try {
+        if (propUser) {
+          setCurrentUser(propUser);
+          const userSessionId = getSessionId(propUser.id);
+          setSessionId(userSessionId);
+          console.log("Using existing session ID:", userSessionId);
+          return;
+        }
+        
+        const { user } = await checkAuthStatus();
+        if (user) {
+          setCurrentUser(user);
+          const userSessionId = getSessionId(user.id);
+          setSessionId(userSessionId);
+          console.log("Using existing session ID:", userSessionId);
+        } else {
+          showError("Please sign in to use the chat.");
+          navigate('/auth', { state: { from: '/chat' } });
+        }
+      } catch (err) {
+        console.error("Error verifying user:", err);
+        showError("Authentication error. Please sign in again.");
         navigate('/auth', { state: { from: '/chat' } });
       }
-    } catch (err) {
-      console.error("Error in checkUser:", err);
+    };
+    
+    verifyUser();
+    
+    // Load previous messages if available
+    const loadPreviousMessages = () => {
+      try {
+        const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
+        if (savedMessages) {
+          setMessages(JSON.parse(savedMessages));
+        }
+      } catch (err) {
+        console.error("Error loading previous messages:", err);
+      }
+    };
+    
+    if (sessionId) {
+      loadPreviousMessages();
     }
-  };
+  }, [propUser, sessionId, navigate, showError]);
+
+  // Save messages to localStorage when they change
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      localStorage.setItem(`chat_messages_${sessionId}`, JSON.stringify(messages));
+    }
+  }, [messages, sessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -65,26 +80,9 @@ const ChatInterface = ({ user }) => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !currentUser || !sessionId) return;
 
     try {
-      // Check if we have a current user
-      if (!currentUser) {
-        console.log("No current user found, trying to get from supabase");
-        const { data, error } = await supabase.auth.getUser();
-        
-        if (error || !data.user) {
-          console.error("Auth error:", error);
-          showError('Please sign in to continue the chat');
-          navigate('/auth', { state: { from: '/chat' } });
-          return;
-        }
-        
-        setCurrentUser(data.user);
-      }
-
-      
-
       const newMessage = {
         text: input,
         sender: 'user',
@@ -95,37 +93,24 @@ const ChatInterface = ({ user }) => {
       setInput('');
       setIsTyping(true);
 
-      // Log the request details for debugging
-      console.log("Sending chat request:", {
-        message: input,
-        sessionId,
-        userId: currentUser.id,
-        
-      });
-
       const response = await fetch(`${API_BASE_URL}/api/chatbot/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          //'Authorization': `Bearer ${sessionData.session.access_token}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           message: input,
           sessionId,
-          userId: currentUser.id
+          // userId: currentUser.id
         })
       });
 
-      console.log("API response status:", response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`Failed to get response: ${response.status} ${errorText}`);
+        throw new Error(`Server error: ${response.status}`);
       }
 
       const responseData = await response.json();
-      console.log("API response data:", responseData);
       
       const aiResponse = {
         text: responseData.response,
@@ -142,21 +127,18 @@ const ChatInterface = ({ user }) => {
     }
   };
 
-  // If no user is authenticated and we're not in the process of checking, redirect
-  useEffect(() => {
-    if (currentUser === null) {
-      // We're still loading or checking
-      return;
-    }
-  }, [currentUser, navigate]);
-
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Chat Header */}
       <div className="bg-primary/10 p-4 border-b border-primary/20">
         <h2 className="text-lg font-semibold text-primary">AI Therapy Chat</h2>
         {currentUser && (
-          <p className="text-sm text-primary/70">Logged in as: {currentUser.email}</p>
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-primary/70">Logged in as: {currentUser.email}</p>
+            {sessionId && (
+              <p className="text-xs text-primary/50">Session: {sessionId.substring(0, 8)}...</p>
+            )}
+          </div>
         )}
       </div>
 

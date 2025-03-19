@@ -11,67 +11,34 @@ import LifePrediction from './components/LifePrediction';
 import AuthForm from './components/AuthForm';
 import { ThemeProvider } from './context/ThemeContext';
 import Footer from './components/Footer';
-import { supabase } from './utils/supabase1';
+import { checkAuthStatus, signOut } from './services/authService.js';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Check for existing session on app load
   useEffect(() => {
-    checkUser();
-    
-    // Set up auth state listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event);
-        if (event === 'SIGNED_IN' && session) {
-          setUser(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-      }
-    );
-    
-    return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
+    const initializeAuth = async () => {
+      try {
+        setLoading(true);
+        const { user } = await checkAuthStatus();
+        setUser(user);
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
+
+    initializeAuth();
   }, []);
+
+  // Check for existing session on app load
   
-  const checkUser = async () => {
-    try {
-      setLoading(true);
-      // Get current session
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log("Session data on app load:", sessionData);
-      
-      if (sessionData?.session?.user) {
-        setUser(sessionData.session.user);
-        console.log("User found in session:", sessionData.session.user);
-      } else {
-        // Verify with getUser as a backup
-        const { data, error } = await supabase.auth.getUser();
-        console.log("getUser data:", data);
-        
-        if (data?.user) {
-          setUser(data.user);
-          console.log("User found with getUser:", data.user);
-        } else {
-          console.log("No authenticated user found");
-          setUser(null);
-        }
-      }
-    } catch (error) {
-      console.error("Error checking user session:", error);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+
 
   // Handle auth redirects on first load
   useEffect(() => {
@@ -115,7 +82,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       setUser(null);
       navigate('/');
       // Clean up any stored tokens

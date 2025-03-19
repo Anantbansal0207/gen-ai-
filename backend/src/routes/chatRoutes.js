@@ -1,13 +1,15 @@
 import express from 'express';
 import { ChatService } from '../services/chatService.js';
+import { authenticate } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/chat', async (req, res) => {
+router.post('/chat', authenticate, async (req, res) => {
   try {
-    const { userId, sessionId, message } = req.body;
+    const { sessionId, message } = req.body;
+    const userId = req.user.id; // Extracted from authenticated user
 
-    if (!userId || !sessionId || !message) {
+    if (!sessionId || !message) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

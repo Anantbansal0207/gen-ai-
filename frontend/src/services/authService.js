@@ -71,6 +71,16 @@ export const completeSignUp = async (email, otp) => {
     if (data.session?.access_token) {
       localStorage.setItem('authToken', data.session.access_token);
     }
+    if (data.user?.id) {
+      localStorage.setItem('userId', data.user.id);
+      
+      // Store a persistent sessionId for this user
+      const existingSessionId = localStorage.getItem(`sessionId_${data.user.id}`);
+      if (!existingSessionId) {
+        const newSessionId = crypto.randomUUID();
+        localStorage.setItem(`sessionId_${data.user.id}`, newSessionId);
+      }
+    }
 
     return data;
   } catch (error) {
@@ -100,6 +110,16 @@ export const signIn = async (email, password) => {
     // Store the token if it's included in the response
     if (data.session?.access_token) {
       localStorage.setItem('authToken', data.session.access_token);
+    }
+    if (data.user?.id) {
+      localStorage.setItem('userId', data.user.id);
+      
+      // Store a persistent sessionId for this user
+      const existingSessionId = localStorage.getItem(`sessionId_${data.user.id}`);
+      if (!existingSessionId) {
+        const newSessionId = crypto.randomUUID();
+        localStorage.setItem(`sessionId_${data.user.id}`, newSessionId);
+      }
     }
 
     return data;
@@ -147,6 +167,32 @@ export const completePasswordReset = async (newPassword) => {
     throw error;
   }
 };
+
+export const checkAuthStatus = async () => {
+  try {
+    // First check localStorage for token
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      return { user: null };
+    }
+    
+    // Verify token with backend
+    const { data, error } = await supabase.auth.getUser(authToken);
+    
+    if (error || !data.user) {
+      // Clear invalid token
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userId');
+      return { user: null };
+    }
+    
+    return { user: data.user };
+  } catch (error) {
+    console.error('Error checking auth status:', error);
+    return { user: null };
+  }
+};
+
 export const signOut = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/signout`, {
@@ -164,10 +210,24 @@ export const signOut = async () => {
 
     // Clear the token from localStorage
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
     
     return await response.json();
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;
   }
+};
+export const getSessionId = (userId) => {
+  if (!userId) return null;
+  
+  const sessionId = localStorage.getItem(`sessionId_${userId}`);
+  if (sessionId) {
+    return sessionId;
+  }
+  
+  // Create a new sessionId if one doesn't exist
+  const newSessionId = crypto.randomUUID();
+  localStorage.setItem(`sessionId_${userId}`, newSessionId);
+  return newSessionId;
 };
