@@ -6,11 +6,18 @@ await initializeConfig();
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
-export const generateChatResponse = async (prompt, context = '') => {
+export const generateChatResponse = async (prompt, context = [], systemPrompt = '') => {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+    // Start chat with the full conversation history
     const chat = model.startChat({
-      history: context ? [{ role: 'user', parts: context }] : []
+      history: context,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+      },
+      systemInstruction: systemPrompt || "You are an empathetic AI therapist. Provide thoughtful, compassionate responses."
     });
 
     const result = await chat.sendMessage(prompt);

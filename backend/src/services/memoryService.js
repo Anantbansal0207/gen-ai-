@@ -46,6 +46,43 @@ export class MemoryService {
     }
   }
 
+  static async summarizeConversation(context) {
+    try {
+      // Only summarize if there are enough messages
+      if (context.length < 6) {
+        return context;
+      }
+      
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      // Extract the conversation as a string
+      const conversationText = context.map(msg => 
+        `${msg.role}: ${msg.content}`
+      ).join('\n');
+      
+      // Request a summary
+      const summaryPrompt = `Summarize the following therapy conversation while preserving key emotional context, important details, and therapeutic insights. Keep the summary concise but comprehensive:
+  
+  ${conversationText}`;
+  
+      const result = await model.generateContent(summaryPrompt);
+      const summary = await result.response.text();
+      
+      // Create a new context with the summary
+      return [
+        {
+          role: 'system',
+          content: `Previous conversation summary: ${summary}`
+        },
+        // Keep the last 2 exchanges (4 messages) for immediate context
+        ...context.slice(-4)
+      ];
+    } catch (error) {
+      console.error('❌ Error summarizing conversation:', error);
+      return context; // Return original context if summarization fails
+    }
+  }
+
   // Long-term memory management (Pinecone)
   static async saveLongTermMemory(userId, data) {
     try {
