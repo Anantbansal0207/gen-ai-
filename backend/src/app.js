@@ -82,8 +82,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-await verifySupabaseConnection();
-console.log('Supabase connection verified successfully!');
+
 
 // Start the server
 const PORT = config.port || 3000;
