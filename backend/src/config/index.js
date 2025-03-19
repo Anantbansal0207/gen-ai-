@@ -42,7 +42,11 @@ export function initializeConfig() {
       gemini: {
         apiKey: process.env.GEMINI_API_KEY
       },
+      resend: {
+        apiKey: process.env.RESEND_API_KEY,
+      },
       session: {
+
         secret: process.env.SESSION_SECRET
       },
       nodeEnv: process.env.NODE_ENV || 'development'

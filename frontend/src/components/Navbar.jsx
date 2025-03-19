@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 
-const Navbar = () => {
+const Navbar = ({ user, onLogout, navLinks }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isCurrentPath = (path) => location.pathname === path;
-
-  const navLinks = [
-    { path: '/chat', label: 'Chat' },
-    { path: '/mental-health', label: 'Mental Health' },
-    { path: '/relationship', label: 'Relationship' },
-    { path: '/life-prediction', label: 'Life Prediction' },
-    { path: '/dream-interpreter', label: 'Dream Interpreter' }
-  ];
 
   return (
     <nav className="bg-background shadow-lg transition-colors duration-200 sticky top-0 z-50">
@@ -44,6 +37,23 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
+            
+            {user ? (
+              <button
+                onClick={onLogout}
+                className="px-4 py-2 rounded-full text-sm font-medium bg-accent text-cream hover:bg-accent/90 transition-colors duration-200"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-accent text-cream hover:bg-accent/90 transition-colors duration-200"
+              >
+                Sign In
+              </Link>
+            )}
+            
             <ThemeToggle />
           </div>
 
@@ -99,11 +109,31 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
+            
+            {user ? (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onLogout();
+                }}
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium bg-accent text-cream hover:bg-accent/90 transition-colors duration-200"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="block px-3 py-2 rounded-md text-base font-medium bg-accent text-cream hover:bg-accent/90 transition-colors duration-200"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}
     </nav>
   );
-}
+};
 
 export default Navbar;

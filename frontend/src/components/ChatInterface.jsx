@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { supabase } from '../utils/supabase1';
 import { useToast } from '../hooks/useToast';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
@@ -27,42 +28,52 @@ const ChatInterface = () => {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const user = await supabase.auth.getUser();
-    if (!user) {
-      showError('Please sign in to continue the chat');
-      return;
-    }
-
-    const newMessage = {
-      text: input,
-      sender: 'user',
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setInput('');
-    setIsTyping(true);
-
     try {
-      const response = await fetch('/api/chatbot/chat', {
+      // The getUser() method returns { data: { user }, error }
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error || !data.user) {
+        showError('Please sign in to continue the chat');
+        return;
+      }
+
+      // Get the session which contains the access token
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        showError('Your session has expired. Please sign in again.');
+        return;
+      }
+
+      const newMessage = {
+        text: input,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, newMessage]);
+      setInput('');
+      setIsTyping(true);
+
+      const response = await fetch(`${API_BASE_URL}/api/chatbot/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.session.access_token}`
+          'Authorization': `Bearer ${sessionData.session.access_token}`
         },
         body: JSON.stringify({
           message: input,
           sessionId,
-          userId: user.id
+          userId: data.user.id
         })
       });
 
       if (!response.ok) throw new Error('Failed to get response');
 
-      const data = await response.json();
+      const responseData = await response.json();
       
       const aiResponse = {
-        text: data.response,
+        text: responseData.response,
         sender: 'ai',
         timestamp: new Date().toISOString(),
       };
