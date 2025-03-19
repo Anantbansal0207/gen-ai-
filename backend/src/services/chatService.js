@@ -21,16 +21,30 @@ export class ChatService {
         content: message
       });
 
+      console.log("🔹 Chat Context for session:", sessionMemory.chat_context);
+
       // Query long-term memory for relevant context
       const relevantMemories = await MemoryService.queryLongTermMemory(
         userId,
         message
       );
 
-      // Generate response with context
+      const relevantContext = this.formatContextFromMemories(relevantMemories);
+
+       // Add system message with relevant memories if any
+       let contextWithMemories = [...sessionMemory.chat_context];
+       if (relevantContext) {
+         contextWithMemories.unshift({
+           role: 'system',
+           content: `Relevant past information: ${relevantContext}`
+         });
+       }
+
+      // Generate response with full context
       const response = await generateChatResponse(
         message,
-        this.formatContextFromMemories(relevantMemories)
+        contextWithMemories,
+        "You are an empathetic AI therapist. Provide thoughtful, compassionate responses based on the conversation history."
       );
 
       // Add AI response to context
@@ -38,6 +52,18 @@ export class ChatService {
         role: 'assistant',
         content: response
       });
+
+      // Save updated session memory
+      await MemoryService.saveSessionMemory(
+        sessionId,
+        userId,
+        sessionMemory.chat_context
+      );
+
+      // Summarize the context if it's getting long
+      if (sessionMemory.chat_context.length > 10) {
+        sessionMemory.chat_context = await MemoryService.summarizeConversation(sessionMemory.chat_context);
+      }
 
       // Save updated session memory
       await MemoryService.saveSessionMemory(
