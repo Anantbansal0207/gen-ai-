@@ -11,11 +11,67 @@ import LifePrediction from './components/LifePrediction';
 import AuthForm from './components/AuthForm';
 import { ThemeProvider } from './context/ThemeContext';
 import Footer from './components/Footer';
+import { supabase } from './utils/supabase1';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Check for existing session on app load
+  useEffect(() => {
+    checkUser();
+    
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event);
+        if (event === 'SIGNED_IN' && session) {
+          setUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+    
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
+  }, []);
+  
+  const checkUser = async () => {
+    try {
+      setLoading(true);
+      // Get current session
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Session data on app load:", sessionData);
+      
+      if (sessionData?.session?.user) {
+        setUser(sessionData.session.user);
+        console.log("User found in session:", sessionData.session.user);
+      } else {
+        // Verify with getUser as a backup
+        const { data, error } = await supabase.auth.getUser();
+        console.log("getUser data:", data);
+        
+        if (data?.user) {
+          setUser(data.user);
+          console.log("User found with getUser:", data.user);
+        } else {
+          console.log("No authenticated user found");
+          setUser(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking user session:", error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle auth redirects on first load
   useEffect(() => {
@@ -57,12 +113,17 @@ function App() {
     sessionStorage.removeItem('recoveryToken');
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    navigate('/');
-    // Clean up any stored tokens
-    sessionStorage.removeItem('recoveryToken');
-    localStorage.removeItem('authToken');
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate('/');
+      // Clean up any stored tokens
+      sessionStorage.removeItem('recoveryToken');
+      localStorage.removeItem('authToken');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   // Define navLinks array to pass to the Navbar component
@@ -73,6 +134,16 @@ function App() {
     { path: '/life-prediction', label: 'Life Prediction' },
     { path: '/dream-interpreter', label: 'Dream Interpreter' }
   ];
+
+  if (loading) {
+    return (
+      <ThemeProvider>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider>
