@@ -16,8 +16,8 @@ const ChatInterface = ({ user: propUser }) => {
   const { showError } = useToast();
   const navigate = useNavigate();
 
+  // Effect to handle authentication and session setup
   useEffect(() => {
-    // Check user authentication status
     const verifyUser = async () => {
       try {
         if (propUser) {
@@ -46,23 +46,21 @@ const ChatInterface = ({ user: propUser }) => {
     };
     
     verifyUser();
+  }, [propUser, navigate, showError]); // Removed sessionId from dependencies
+
+  // Separate effect to load previous messages once sessionId is available
+  useEffect(() => {
+    if (!sessionId) return;
     
-    // Load previous messages if available
-    const loadPreviousMessages = () => {
-      try {
-        const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
-        if (savedMessages) {
-          setMessages(JSON.parse(savedMessages));
-        }
-      } catch (err) {
-        console.error("Error loading previous messages:", err);
+    try {
+      const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
+      if (savedMessages) {
+        setMessages(JSON.parse(savedMessages));
       }
-    };
-    
-    if (sessionId) {
-      loadPreviousMessages();
+    } catch (err) {
+      console.error("Error loading previous messages:", err);
     }
-  }, [propUser, sessionId, navigate, showError]);
+  }, [sessionId]); // This effect only runs when sessionId changes
 
   // Save messages to localStorage when they change
   useEffect(() => {
