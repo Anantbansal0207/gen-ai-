@@ -37,7 +37,8 @@ export function initializeConfig() {
       pinecone: {
         apiKey: process.env.PINECONE_API_KEY,
         environment: process.env.PINECONE_ENVIRONMENT,
-        index: process.env.PINECONE_INDEX
+        index: process.env.PINECONE_INDEX2,
+
       },
       gemini: {
         apiKey: process.env.GEMINI_API_KEY

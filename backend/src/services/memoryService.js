@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
-import { PineconeClient } from 'pinecone-client';
+import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { config, initializeConfig } from '../config/index.js'; //
+import { config, initializeConfig } from '../config/index.js';
 
 // Ensure config is initialized before accessing environment variables
 await initializeConfig();
@@ -10,10 +10,11 @@ await initializeConfig();
 const redis = new Redis(config.redis.url);
 
 // Initialize Pinecone client
-const pinecone = new PineconeClient({
-  apiKey: config.pinecone.apiKey,
-  environment: config.pinecone.environment
+const pinecone = new Pinecone({
+  apiKey: config.pinecone.apiKey, // Removed invalid 'environment' key
 });
+
+const index = pinecone.index(config.pinecone.index);
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
@@ -39,10 +40,10 @@ export class MemoryService {
   static async getSessionMemory(sessionId) {
     try {
       const data = await redis.get(`chat_session:${sessionId}`);
-      return data ? JSON.parse(data) : null;
+      return data ? JSON.parse(data) : [];
     } catch (error) {
       console.error('❌ Error retrieving session memory:', error);
-      return null;
+      return [];
     }
   }
 
@@ -62,8 +63,8 @@ export class MemoryService {
       
       // Request a summary
       const summaryPrompt = `Summarize the following therapy conversation while preserving key emotional context, important details, and therapeutic insights. Keep the summary concise but comprehensive:
-  
-  ${conversationText}`;
+
+      ${conversationText}`;
   
       const result = await model.generateContent(summaryPrompt);
       const summary = await result.response.text();
@@ -86,7 +87,6 @@ export class MemoryService {
   // Long-term memory management (Pinecone)
   static async saveLongTermMemory(userId, data) {
     try {
-      const index = pinecone.Index(config.pinecone.index);
       const vector = await this.generateEmbedding(data.content);
 
       await index.upsert({
@@ -112,7 +112,6 @@ export class MemoryService {
 
   static async queryLongTermMemory(userId, query, limit = 5) {
     try {
-      const index = pinecone.Index(config.pinecone.index);
       const queryVector = await this.generateEmbedding(query);
 
       const results = await index.query({
