@@ -41,7 +41,8 @@ export function initializeConfig() {
 
       },
       huggingface: {
-        apiKey: process.env.HUGGINGFACE_API_KEY
+        apiKey1: process.env.HUGGINGFACE_API_KEY,
+        apiKey2: process.env.HUGGINGFACE_API_KEY1
       },
       gemini: {
         apiKey: process.env.GEMINI_API_KEY

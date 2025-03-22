@@ -2,10 +2,7 @@ import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
 import { config } from '../config/index.js';
-import dotenv from 'dotenv';
 
-const HUGGINGFACE_MOOD_API_URL = process.env.HUGGINGFACE_MOOD_API_URL;
-const HUGGINGFACE_API_KEY = proess.env.HUGGINGFACE_API_KEY;
 
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
@@ -120,12 +117,13 @@ export class ChatService {
 
   static async analyzeMood(message) {
     try {
+      const HUGGINGFACE_MOOD_API_URL="https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base";
       const response = await axios.post(
         HUGGINGFACE_MOOD_API_URL,
         { inputs: message },
         {
           headers: {
-            Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
+            Authorization: `Bearer ${config.huggingface.apiKey2}`,
             "Content-Type": "application/json",
           },
         }
@@ -174,7 +172,7 @@ static async analyzeTopic(message) {
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${config.huggingface.apiKey}`,
+        "Authorization": `Bearer ${config.huggingface.apiKey1}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
