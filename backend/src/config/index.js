@@ -40,6 +40,9 @@ export function initializeConfig() {
         index: process.env.PINECONE_INDEX2,
 
       },
+      huggingface: {
+        apiKey: process.env.HUGGINGFACE_API_KEY
+      },
       gemini: {
         apiKey: process.env.GEMINI_API_KEY
       },
