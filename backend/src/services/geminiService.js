@@ -6,6 +6,11 @@ await initializeConfig();
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
+/*
+1. Using the mood ai should detect if the mood betters it should continue in the path of doing that
+2. use the response to and message to generate a sumaary and then save it  in save long term memory function
+*/
+
 export const generateChatResponse = async (prompt, context = [], systemPrompt = '') => {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });

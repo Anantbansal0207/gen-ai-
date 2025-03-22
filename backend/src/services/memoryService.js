@@ -88,13 +88,15 @@ export class MemoryService {
   static async saveLongTermMemory(userId, data) {
     try {
       const vector = await this.generateEmbedding(data.content);
-
+  
       await index.upsert({
         vectors: [{
           id: `memory:${userId}:${Date.now()}`,
           values: vector,
           metadata: {
             user_id: userId,
+            content: data.content, // Include the actual content in metadata
+            response: data.response, // Include the response in metadata
             type: data.type,
             mood: data.mood,
             topic: data.topic,
@@ -102,7 +104,7 @@ export class MemoryService {
           }
         }]
       });
-
+  
       return true;
     } catch (error) {
       console.error('❌ Error saving long-term memory:', error);

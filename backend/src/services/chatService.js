@@ -15,9 +15,6 @@ export class ChatService {
         };
       }
 
-      // Ensure chat_context is always an array
-      sessionMemory.chat_context = sessionMemory.chat_context || [];
-
       // Add user message to context
       sessionMemory.chat_context.push({
         role: 'user',
@@ -34,14 +31,14 @@ export class ChatService {
 
       const relevantContext = this.formatContextFromMemories(relevantMemories);
 
-      // Add system message with relevant memories if any
-      let contextWithMemories = [...sessionMemory.chat_context];
-      if (relevantContext) {
-        contextWithMemories.unshift({
-          role: 'system',
-          content: `Relevant past information: ${relevantContext}`
-        });
-      }
+       // Add system message with relevant memories if any
+       let contextWithMemories = [...sessionMemory.chat_context];
+       if (relevantContext) {
+         contextWithMemories.unshift({
+           role: 'system',
+           content: `Relevant past information: ${relevantContext}`
+         });
+       }
 
       // Generate response with full context
       const response = await generateChatResponse(
@@ -66,14 +63,12 @@ export class ChatService {
       // Summarize the context if it's getting long
       if (sessionMemory.chat_context.length > 10) {
         sessionMemory.chat_context = await MemoryService.summarizeConversation(sessionMemory.chat_context);
+        await MemoryService.saveSessionMemory(
+          sessionId,
+          userId,
+          sessionMemory.chat_context
+        );
       }
-
-      // Save updated session memory
-      await MemoryService.saveSessionMemory(
-        sessionId,
-        userId,
-        sessionMemory.chat_context
-      );
 
       // Save important interactions to long-term memory
       if (this.shouldSaveToLongTerm(message, response)) {
@@ -97,20 +92,35 @@ export class ChatService {
   }
 
   static formatContextFromMemories(memories) {
+    if (!memories || memories.length === 0) {
+      return '';
+    }
+    
     return memories
-      .map(memory => `Previous interaction about ${memory.metadata.topic}: ${memory.metadata.content}`)
+      .map(memory => {
+        const content = memory.metadata.content || "Unknown content";
+        const topic = memory.metadata.topic || "general topic";
+        const mood = memory.metadata.mood || "neutral mood";
+        return `Previous interaction about ${topic}: ${content}: ${mood}`;
+      })
       .join('\n');
   }
 
   static shouldSaveToLongTerm(message, response) {
+    // Implement logic to determine if interaction should be saved long-term
+    // For example, based on emotional content, topic importance, etc.
     return true; // For now, save everything
   }
 
   static analyzeMood(message) {
+    // Implement mood analysis logic
+    // For now, return neutral
     return 'neutral';
   }
 
   static analyzeTopic(message) {
+    // Implement topic analysis logic
+    // For now, return general
     return 'general';
   }
 }
