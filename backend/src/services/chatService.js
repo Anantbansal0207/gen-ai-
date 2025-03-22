@@ -2,6 +2,10 @@ import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
 import { config } from '../config/index.js';
+import dotenv from 'dotenv';
+
+const HUGGINGFACE_MOOD_API_URL = process.env.HUGGINGFACE_MOOD_API_URL;
+const HUGGINGFACE_API_KEY = proess.env.HUGGINGFACE_API_KEY;
 
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
