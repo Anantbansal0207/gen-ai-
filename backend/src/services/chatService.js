@@ -114,10 +114,32 @@ export class ChatService {
     return true; // For now, save everything
   }
 
-  static analyzeMood(message) {
-    // Implement mood analysis logic
-    // For now, return neutral
-    return 'neutral';
+  static async analyzeMood(message) {
+    try {
+      const response = await axios.post(
+        HUGGINGFACE_MOOD_API_URL,
+        { inputs: message },
+        {
+          headers: {
+            Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Extract highest-confidence emotion
+      const emotions = response.data[0];
+      const highestEmotion = emotions.reduce((prev, current) =>
+        prev.score > current.score ? prev : current
+      );
+
+      console.log("🔹 Mood Analysis:", highestEmotion);
+
+      return highestEmotion.label; // Returns the most likely emotion (e.g., 'joy', 'sadness')
+    } catch (error) {
+      console.error("Error analyzing mood:", error.response ? error.response.data : error.message);
+      return "unknown"; // Fallback if API fails
+    }
   }
 
 
