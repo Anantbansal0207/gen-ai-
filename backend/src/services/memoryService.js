@@ -16,6 +16,7 @@ const pinecone = new Pinecone({
 
 const index = pinecone.index(config.pinecone.index);
 
+
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
 export class MemoryService {
@@ -108,21 +109,20 @@ export class MemoryService {
     try {
       const vector = await this.generateEmbedding(data.content);
   
-      await index.upsert({
-        vectors: [{
-          id: `memory:${userId}:${Date.now()}`,
-          values: vector,
-          metadata: {
-            user_id: userId,
-            content: data.content, // Include the actual content in metadata
-            response: data.response, // Include the response in metadata
-            type: data.type,
-            mood: data.mood,
-            topic: data.topic,
-            timestamp: new Date().toISOString()
-          }
-        }]
-      });
+      // Wrap the vector in an array to match Pinecone's expected format
+      await index.upsert([{
+        id: `memory:${userId}:${Date.now()}`,
+        values: vector,
+        metadata: {
+          user_id: userId,
+          content: data.content, // Include the actual content in metadata
+          response: data.response, // Include the response in metadata
+          type: data.type,
+          mood: data.mood,
+          topic: data.topic,
+          timestamp: new Date().toISOString()
+        }
+      }]);
   
       return true;
     } catch (error) {
@@ -154,7 +154,9 @@ export class MemoryService {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-embedding-exp-03-07" });
       const result = await model.embedContent(text);
-      return result.embedding.values; // Returns the vector representation of text
+      
+      // Truncate embedding to match index dimensions
+      return result.embedding.values.slice(0, 1024);
     } catch (error) {
       console.error("❌ Error generating embedding:", error);
       return []; // Return empty array if there's an error
