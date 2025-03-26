@@ -166,10 +166,16 @@ export class ChatService {
       
       // Therapy-relevant topic labels to classify against
       const candidateLabels = [
-        "anxiety", "depression", "relationships", "grief", 
-        "trauma", "self-esteem", "work-stress", "identity",
-        "addiction", "sleep", "health-anxiety", "life-transition",
-        "anger", "parenting", "loneliness", "existential-crisis"
+        "mental health",      // Covers anxiety, depression, grief, trauma
+        "relationships",      // Covers romantic, family, friendships, identity
+        "work & career",      // Covers work-stress, life-transition
+        "self-esteem",        // Covers self-worth, confidence issues
+        "addiction",          // Stays as it is
+        "sleep issues",       // Stays as it is
+        "health concerns",    // Covers health-anxiety, chronic illness stress
+        "parenting",          // Stays as it is
+        "loneliness",         // Stays as it is
+        "existential crisis"  // Stays as it is
       ];
   
       // Prepare the request payload with more robust error checking
