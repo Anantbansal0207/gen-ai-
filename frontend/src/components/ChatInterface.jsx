@@ -3,8 +3,7 @@ import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { checkAuthStatus, getSessionId } from '../services/authService';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+import { sendChatMessage, refreshChatSession } from '../services/chatService';
 
 const ChatInterface = ({ user: propUser }) => {
   const [messages, setMessages] = useState([]);
@@ -13,10 +12,9 @@ const ChatInterface = ({ user: propUser }) => {
   const [sessionId, setSessionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(propUser);
   const messagesEndRef = useRef(null);
-  const { showError } = useToast();
+  const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
 
-  // Effect to handle authentication and session setup
   useEffect(() => {
     const verifyUser = async () => {
       try {
@@ -46,9 +44,8 @@ const ChatInterface = ({ user: propUser }) => {
     };
     
     verifyUser();
-  }, [propUser, navigate, showError]); // Removed sessionId from dependencies
+  }, [propUser, navigate, showError]);
 
-  // Separate effect to load previous messages once sessionId is available
   useEffect(() => {
     if (!sessionId) return;
     
@@ -60,9 +57,8 @@ const ChatInterface = ({ user: propUser }) => {
     } catch (err) {
       console.error("Error loading previous messages:", err);
     }
-  }, [sessionId]); // This effect only runs when sessionId changes
+  }, [sessionId]);
 
-  // Save messages to localStorage when they change
   useEffect(() => {
     if (sessionId && messages.length > 0) {
       localStorage.setItem(`chat_messages_${sessionId}`, JSON.stringify(messages));
@@ -76,6 +72,20 @@ const ChatInterface = ({ user: propUser }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleRefreshSession = async () => {
+    if (!sessionId || !currentUser) return;
+
+    try {
+      await refreshChatSession(sessionId);
+      setMessages([]);
+      localStorage.removeItem(`chat_messages_${sessionId}`);
+      showSuccess('Chat session refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      showError('Failed to refresh chat session');
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !currentUser || !sessionId) return;
@@ -91,24 +101,7 @@ const ChatInterface = ({ user: propUser }) => {
       setInput('');
       setIsTyping(true);
 
-      const response = await fetch(`${API_BASE_URL}/api/chatbot/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          message: input,
-          sessionId,
-          // userId: currentUser.id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      const responseData = await response.json();
+      const responseData = await sendChatMessage(input, sessionId);
       
       const aiResponse = {
         text: responseData.response,
@@ -129,9 +122,17 @@ const ChatInterface = ({ user: propUser }) => {
     <div className="h-screen flex flex-col bg-background">
       {/* Chat Header */}
       <div className="bg-primary/10 p-4 border-b border-primary/20">
-        <h2 className="text-lg font-semibold text-primary">AI Therapy Chat</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-primary">AI Therapy Chat</h2>
+          <button
+            onClick={handleRefreshSession}
+            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+          >
+            Refresh Session
+          </button>
+        </div>
         {currentUser && (
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-2">
             <p className="text-sm text-primary/70">Logged in as: {currentUser.email}</p>
             {sessionId && (
               <p className="text-xs text-primary/50">Session: {sessionId.substring(0, 8)}...</p>
