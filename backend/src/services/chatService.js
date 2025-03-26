@@ -2,6 +2,7 @@ import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
 import { config } from '../config/index.js';
+import axios from 'axios';
 
 
 export class ChatService {
@@ -10,7 +11,7 @@ export class ChatService {
       // Get session context
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
       
-      if (!sessionMemory) {
+      if (!sessionMemory || !sessionMemory.chat_context) {
         sessionMemory = {
           session_id: sessionId,
           user_id: userId,
@@ -75,13 +76,16 @@ export class ChatService {
 
       // Save important interactions to long-term memory
       if (this.shouldSaveToLongTerm(message, response)) {
-        await MemoryService.saveLongTermMemory(userId, {
-          content: message,
-          response: response,
-          type: 'interaction',
-          mood: this.analyzeMood(message),
-          topic: this.analyzeTopic(message)
-        });
+        const mood = await this.analyzeMood(message);
+        const topic = await this.analyzeTopic(message);
+
+      await MemoryService.saveLongTermMemory(userId, {
+      content: message,
+      response: response,
+      type: 'interaction',
+      mood: mood,
+      topic: topic
+    });
       }
 
       return {
