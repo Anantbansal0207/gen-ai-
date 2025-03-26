@@ -150,61 +150,83 @@ export class ChatService {
 
 
 
-static async analyzeTopic(message) {
-  try {
-    // HuggingFace API endpoint for inference
-    const API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli";
-    
-    // Therapy-relevant topic labels to classify against
-    const candidateLabels = [
-      "anxiety", "depression", "relationships", "grief", 
-      "trauma", "self-esteem", "work-stress", "identity",
-      "addiction", "sleep", "health-anxiety", "life-transition",
-      "anger", "parenting", "loneliness", "existential-crisis"
-    ];
-
-    // Prepare the request payload
-    const payload = {
-      inputs: message,
-      parameters: {
-        candidate_labels: candidateLabels,
-        multi_label: false
+  static async analyzeTopic(message) {
+    try {
+      // Validate input
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        console.warn('Invalid message for topic analysis');
+        return this.analyzeTopicWithKeywords(message);
       }
-    };
-
-    // Make API call to Hugging Face
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${config.huggingface.apiKey2}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Hugging Face API returned ${response.status}: ${response.statusText}`);
+  
+      // Truncate very long messages to avoid payload issues
+      const truncatedMessage = message.substring(0, 500);
+  
+      // HuggingFace API endpoint for inference
+      const API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli";
+      
+      // Therapy-relevant topic labels to classify against
+      const candidateLabels = [
+        "anxiety", "depression", "relationships", "grief", 
+        "trauma", "self-esteem", "work-stress", "identity",
+        "addiction", "sleep", "health-anxiety", "life-transition",
+        "anger", "parenting", "loneliness", "existential-crisis"
+      ];
+  
+      // Prepare the request payload with more robust error checking
+      const payload = {
+        inputs: truncatedMessage,
+        parameters: {
+          candidate_labels: candidateLabels,
+          multi_label: false
+        }
+      };
+  
+      // Make API call to Hugging Face with additional error handling
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${config.huggingface.apiKey2}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+  
+      // Check response status
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`Hugging Face API Error: ${response.status}`, errorBody);
+        throw new Error(`Hugging Face API returned ${response.status}: ${errorBody}`);
+      }
+  
+      const result = await response.json();
+      
+      // Validate result structure
+      if (!result.labels || !result.scores) {
+        console.warn('Unexpected API response structure');
+        return this.analyzeTopicWithKeywords(message);
+      }
+      
+      // Get the highest scoring label
+      const topLabelIndex = result.scores.indexOf(Math.max(...result.scores));
+      const topLabel = result.labels[topLabelIndex];
+      
+      // Only accept the classification if confidence is reasonable
+      if (result.scores[topLabelIndex] > 0.3) {
+        return topLabel;
+      }
+      
+      // Fallback to secondary analysis for low-confidence results
+      return this.analyzeTopicWithKeywords(message);
+    } catch (error) {
+      console.error('❌ Error using Hugging Face for topic analysis:', 
+        error.message, 
+        error.response ? error.response.data : 'No additional error details'
+      );
+      
+      // Always fall back to keyword analysis
+      return this.analyzeTopicWithKeywords(message);
     }
-
-    const result = await response.json();
-    
-    // Get the highest scoring label
-    const topLabelIndex = result.scores.indexOf(Math.max(...result.scores));
-    const topLabel = result.labels[topLabelIndex];
-    
-    // Only accept the classification if confidence is reasonable
-    if (result.scores[topLabelIndex] > 0.3) {
-      return topLabel;
-    }
-    
-    // Fallback to secondary analysis for low-confidence results
-    return this.analyzeTopicWithKeywords(message);
-  } catch (error) {
-    console.error('❌ Error using Hugging Face for topic analysis:', error);
-    // Fallback to keyword-based analysis if API fails
-    return this.analyzeTopicWithKeywords(message);
   }
-}
 
 // Fallback method using keyword matching
 static analyzeTopicWithKeywords(message) {
