@@ -46,6 +46,25 @@ export class MemoryService {
       return [];
     }
   }
+  static async deleteSessionMemory(sessionId) {
+    try {
+      // Check if session exists first
+      const existingSession = await this.getSessionMemory(sessionId);
+      
+      if (!existingSession) {
+        console.log(`⚠️ No session found for session ID: ${sessionId}`);
+        return false;
+      }
+  
+      // Delete the session memory from Redis
+      await redis.del(`chat_session:${sessionId}`);
+      console.log(`✅ Session memory deleted for session ID: ${sessionId}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error deleting session memory:', error);
+      return false;
+    }
+  }
 
   static async summarizeConversation(context) {
     try {
@@ -72,7 +91,7 @@ export class MemoryService {
       // Create a new context with the summary
       return [
         {
-          role: 'system',
+          role: 'user',
           content: `Previous conversation summary: ${summary}`
         },
         // Keep the last 2 exchanges (4 messages) for immediate context

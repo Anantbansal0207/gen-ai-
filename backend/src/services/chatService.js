@@ -39,7 +39,7 @@ export class ChatService {
        let contextWithMemories = [...sessionMemory.chat_context];
        if (relevantContext) {
          contextWithMemories.unshift({
-           role: 'system',
+           role: 'user',
            content: `Relevant past information: ${relevantContext}`
          });
        }
@@ -176,7 +176,7 @@ static async analyzeTopic(message) {
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${config.huggingface.apiKey1}`,
+        "Authorization": `Bearer ${config.huggingface.apiKey2}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
