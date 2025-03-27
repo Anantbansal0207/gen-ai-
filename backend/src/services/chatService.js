@@ -148,16 +148,16 @@ export class ChatService {
     
     // More sophisticated logic can be added here
     // Current implementation saves everything
-    const saveConditions = [
-      message.length > 50,  // Longer meaningful messages
-      response.length > 30, // Non-trivial responses
-      true  // Default fallback
-    ];
+    // const saveConditions = [
+    //   message.length > 50,  // Longer meaningful messages
+    //   response.length > 30, // Non-trivial responses
+    //   true  // Default fallback
+    // ];
 
-    const shouldSave = saveConditions.some(condition => condition);
+    // const shouldSave = saveConditions.some(condition => condition);
     
-    console.log(`Decision to save to long-term memory: ${shouldSave}`);
-    return shouldSave;
+    console.log(`Decision to save to long-term memory:`);
+    return true;
   }
 
   static async analyzeMood(message) {
