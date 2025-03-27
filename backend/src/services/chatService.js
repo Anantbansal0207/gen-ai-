@@ -4,14 +4,17 @@ import fetch from 'node-fetch';
 import { config } from '../config/index.js';
 import axios from 'axios';
 
-
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
+    console.log(`Processing message for User: ${userId}, Session: ${sessionId}`);
+    console.log(`Message Content: ${message}`);
+
     try {
       // Get session context
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
       
       if (!sessionMemory || !sessionMemory.chat_context) {
+        console.log(`Creating new session memory for Session: ${sessionId}`);
         sessionMemory = {
           session_id: sessionId,
           user_id: userId,
@@ -25,19 +28,24 @@ export class ChatService {
         content: message
       });
 
-      console.log("🔹 Chat Context for session:", sessionMemory.chat_context);
+      console.log(`Current Chat Context Length: ${sessionMemory.chat_context.length}`);
+      console.log("Detailed Chat Context:", JSON.stringify(sessionMemory.chat_context, null, 2));
 
       // Query long-term memory for relevant context
+      console.log(`Querying Long-Term Memory for User: ${userId}`);
       const relevantMemories = await MemoryService.queryLongTermMemory(
         userId,
         message
       );
+
+      console.log(`Found ${relevantMemories.length} Relevant Memories`);
 
       const relevantContext = this.formatContextFromMemories(relevantMemories);
 
        // Add system message with relevant memories if any
        let contextWithMemories = [...sessionMemory.chat_context];
        if (relevantContext) {
+         console.log(`Adding Relevant Memory Context: ${relevantContext}`);
          contextWithMemories.unshift({
            role: 'user',
            content: `Relevant past information: ${relevantContext}`
@@ -45,11 +53,14 @@ export class ChatService {
        }
 
       // Generate response with full context
+      console.log(`Generating Chat Response`);
       const response = await generateChatResponse(
         message,
         contextWithMemories,
         "You are an empathetic AI therapist. Provide thoughtful, compassionate responses based on the conversation history."
       );
+
+      console.log(`Generated Response: ${response}`);
 
       // Add AI response to context
       sessionMemory.chat_context.push({
@@ -58,6 +69,7 @@ export class ChatService {
       });
 
       // Save updated session memory
+      console.log(`Saving Session Memory for Session: ${sessionId}`);
       await MemoryService.saveSessionMemory(
         sessionId,
         userId,
@@ -66,7 +78,10 @@ export class ChatService {
 
       // Summarize the context if it's getting long
       if (sessionMemory.chat_context.length > 10) {
+        console.log(`Context exceeds 10 messages. Initiating Summarization`);
         sessionMemory.chat_context = await MemoryService.summarizeConversation(sessionMemory.chat_context);
+        console.log(`Conversation Summarized. New Context Length: ${sessionMemory.chat_context.length}`);
+        
         await MemoryService.saveSessionMemory(
           sessionId,
           userId,
@@ -76,16 +91,21 @@ export class ChatService {
 
       // Save important interactions to long-term memory
       if (this.shouldSaveToLongTerm(message, response)) {
+        console.log(`Preparing to Save Interaction to Long-Term Memory`);
         const mood = await this.analyzeMood(message);
         const topic = await this.analyzeTopic(message);
 
-      await MemoryService.saveLongTermMemory(userId, {
-      content: message,
-      response: response,
-      type: 'interaction',
-      mood: mood,
-      topic: topic
-    });
+        console.log(`Interaction Mood: ${mood}, Topic: ${topic}`);
+
+        await MemoryService.saveLongTermMemory(userId, {
+          content: message,
+          response: response,
+          type: 'interaction',
+          mood: mood,
+          topic: topic
+        });
+
+        console.log(`Interaction Saved to Long-Term Memory`);
       }
 
       return {
@@ -93,12 +113,22 @@ export class ChatService {
         context: sessionMemory.chat_context
       };
     } catch (error) {
-      console.error('Error processing message:', error);
+      console.error('Critical Error Processing Message:', error);
+      console.error('Error Details:', {
+        userId,
+        sessionId,
+        message,
+        errorName: error.name,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
       throw error;
     }
   }
 
   static formatContextFromMemories(memories) {
+    console.log(`Formatting Context from ${memories ? memories.length : 0} Memories`);
+    
     if (!memories || memories.length === 0) {
       return '';
     }
@@ -114,14 +144,28 @@ export class ChatService {
   }
 
   static shouldSaveToLongTerm(message, response) {
-    // Implement logic to determine if interaction should be saved long-term
-    // For example, based on emotional content, topic importance, etc.
-    return true; // For now, save everything
+    console.log('Evaluating whether to save interaction to long-term memory');
+    
+    // More sophisticated logic can be added here
+    // Current implementation saves everything
+    const saveConditions = [
+      message.length > 50,  // Longer meaningful messages
+      response.length > 30, // Non-trivial responses
+      true  // Default fallback
+    ];
+
+    const shouldSave = saveConditions.some(condition => condition);
+    
+    console.log(`Decision to save to long-term memory: ${shouldSave}`);
+    return shouldSave;
   }
 
   static async analyzeMood(message) {
+    console.log(`Analyzing Mood for Message: ${message.substring(0, 50)}...`);
     try {
       const HUGGINGFACE_MOOD_API_URL="https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base";
+      console.log(`Sending Mood Analysis Request to: ${HUGGINGFACE_MOOD_API_URL}`);
+      
       const response = await axios.post(
         HUGGINGFACE_MOOD_API_URL,
         { inputs: message },
@@ -139,18 +183,23 @@ export class ChatService {
         prev.score > current.score ? prev : current
       );
 
-      console.log("🔹 Mood Analysis:", highestEmotion);
+      console.log("Mood Analysis Result:", {
+        emotion: highestEmotion.label,
+        confidence: highestEmotion.score
+      });
 
-      return highestEmotion.label; // Returns the most likely emotion (e.g., 'joy', 'sadness')
+      return highestEmotion.label; 
     } catch (error) {
-      console.error("Error analyzing mood:", error.response ? error.response.data : error.message);
-      return "unknown"; // Fallback if API fails
+      console.error("Mood Analysis Error:", {
+        errorMessage: error.message,
+        apiResponse: error.response ? error.response.data : 'No API response'
+      });
+      return "unknown";
     }
   }
 
-
-
   static async analyzeTopic(message) {
+    console.log(`Analyzing Topic for Message: ${message.substring(0, 50)}...`);
     try {
       // Validate input
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -224,7 +273,7 @@ export class ChatService {
       // Fallback to secondary analysis for low-confidence results
       return this.analyzeTopicWithKeywords(message);
     } catch (error) {
-      console.error('❌ Error using Hugging Face for topic analysis:', 
+      console.error('Error using Hugging Face for topic analysis:', 
         error.message, 
         error.response ? error.response.data : 'No additional error details'
       );
@@ -234,48 +283,51 @@ export class ChatService {
     }
   }
 
-// Fallback method using keyword matching
-static analyzeTopicWithKeywords(message) {
-  const messageLower = message.toLowerCase();
-  
-  // Topic keywords mapping
-  const topicKeywords = {
-    'anxiety': ['anxious', 'worry', 'nervous', 'panic', 'stress', 'overwhelm', 'fear'],
-    'depression': ['depressed', 'sad', 'hopeless', 'empty', 'unmotivated', 'tired', 'despair'],
-    'relationships': ['partner', 'marriage', 'boyfriend', 'girlfriend', 'family', 'friend', 'coworker'],
-    'grief': ['loss', 'death', 'died', 'passed away', 'miss', 'grieving', 'mourning'],
-    'trauma': ['trauma', 'ptsd', 'abuse', 'assault', 'flashback', 'nightmare', 'trigger'],
-    'self-esteem': ['confidence', 'worth', 'failure', 'inadequate', 'not good enough', 'self-image'],
-    'work-stress': ['job', 'career', 'workplace', 'boss', 'burnout', 'overworked', 'deadline'],
-    'identity': ['identity', 'purpose', 'meaning', 'values', 'goals', 'sexuality', 'gender'],
-    'addiction': ['addiction', 'substance', 'alcohol', 'drinking', 'drugs', 'gambling', 'recovery'],
-    'sleep': ['insomnia', 'sleep', 'tired', 'fatigue', 'nightmare', 'rest', 'exhausted'],
-    'health-anxiety': ['health', 'illness', 'disease', 'symptoms', 'doctor', 'medical', 'diagnosis'],
-    'life-transition': ['change', 'transition', 'move', 'new job', 'graduation', 'retirement', 'milestone']
-  };
-  
-  // Count keyword matches for each topic
-  const topicScores = {};
-  for (const [topic, keywords] of Object.entries(topicKeywords)) {
-    topicScores[topic] = 0;
-    keywords.forEach(keyword => {
-      if (messageLower.includes(keyword)) {
-        topicScores[topic]++;
-      }
-    });
-  }
-  
-  // Find topic with highest score
-  let maxScore = 0;
-  let detectedTopic = 'general-discussion';
-  
-  for (const [topic, score] of Object.entries(topicScores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      detectedTopic = topic;
+  // Fallback method using keyword matching
+  static analyzeTopicWithKeywords(message) {
+    console.log(`Analyzing Topic with Keyword Method: ${message.substring(0, 50)}...`);
+    const messageLower = message.toLowerCase();
+    
+    // Topic keywords mapping
+    const topicKeywords = {
+      'anxiety': ['anxious', 'worry', 'nervous', 'panic', 'stress', 'overwhelm', 'fear'],
+      'depression': ['depressed', 'sad', 'hopeless', 'empty', 'unmotivated', 'tired', 'despair'],
+      'relationships': ['partner', 'marriage', 'boyfriend', 'girlfriend', 'family', 'friend', 'coworker'],
+      'grief': ['loss', 'death', 'died', 'passed away', 'miss', 'grieving', 'mourning'],
+      'trauma': ['trauma', 'ptsd', 'abuse', 'assault', 'flashback', 'nightmare', 'trigger'],
+      'self-esteem': ['confidence', 'worth', 'failure', 'inadequate', 'not good enough', 'self-image'],
+      'work-stress': ['job', 'career', 'workplace', 'boss', 'burnout', 'overworked', 'deadline'],
+      'identity': ['identity', 'purpose', 'meaning', 'values', 'goals', 'sexuality', 'gender'],
+      'addiction': ['addiction', 'substance', 'alcohol', 'drinking', 'drugs', 'gambling', 'recovery'],
+      'sleep': ['insomnia', 'sleep', 'tired', 'fatigue', 'nightmare', 'rest', 'exhausted'],
+      'health-anxiety': ['health', 'illness', 'disease', 'symptoms', 'doctor', 'medical', 'diagnosis'],
+      'life-transition': ['change', 'transition', 'move', 'new job', 'graduation', 'retirement', 'milestone']
+    };
+    
+    // Count keyword matches for each topic
+    const topicScores = {};
+    for (const [topic, keywords] of Object.entries(topicKeywords)) {
+      topicScores[topic] = 0;
+      keywords.forEach(keyword => {
+        if (messageLower.includes(keyword)) {
+          topicScores[topic]++;
+        }
+      });
     }
+    
+    // Find topic with highest score
+    let maxScore = 0;
+    let detectedTopic = 'general-discussion';
+    
+    for (const [topic, score] of Object.entries(topicScores)) {
+      if (score > maxScore) {
+        maxScore = score;
+        detectedTopic = topic;
+      }
+    }
+    
+    console.log(`Keyword Topic Detection Result: ${detectedTopic} (Score: ${maxScore})`);
+    
+    return maxScore > 0 ? detectedTopic : 'general-discussion';
   }
-  
-  return maxScore > 0 ? detectedTopic : 'general-discussion';
-}
 }

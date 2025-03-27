@@ -23,6 +23,7 @@ router.post('/chat', authenticate, async (req, res) => {
 });
 
 router.post('/refresh-session', authenticate, async (req, res) => {
+  console.log('Refresh session endpoint hit'); // Debug log
   try {
     const { sessionId } = req.body;
     const userId = req.user.id;
