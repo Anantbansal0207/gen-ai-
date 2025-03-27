@@ -83,42 +83,24 @@ export class ChatService {
         const isSummarizing = true; // Flag to indicate summarization
 
         sessionMemory.chat_context = await MemoryService.summarizeConversation(sessionMemory.chat_context);
-
         await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
-
-        
 
         // Now, only save to long-term memory if summarization is happening
 
-        if (this.shouldSaveToLongTerm(isSummarizing, message, response)) {
-
-            await MemoryService.saveLongTermMemory(userId, {
-                content: message,
-                response: response,
-                type: 'summary',
-                mood: await this.analyzeMood(message),
-                topic: await this.analyzeTopic(message),
-            });
-
+        if (this.shouldSaveToLongTerm(isSummarizing, message, response)){
+          const mood = await this.analyzeMood(message);
+          const topic = await this.analyzeTopic(message);
+          console.log("this is the topic: "+topic);
+          await MemoryService.saveLongTermMemory(userId, { 
+            content: message,
+            response: response,
+            type: 'interaction',
+            mood: mood,
+            topic: topic
+          });
         }
 
     }
-
-      // Save important interactions to long-term memory
-      const isSummarizing = sessionMemory.chat_context.length > 10; 
-
-      if (this.shouldSaveToLongTerm(isSummarizing, message, response)){
-        const mood = await this.analyzeMood(message);
-        const topic = await this.analyzeTopic(message);
-        console.log("this is the topic: "+topic);
-        await MemoryService.saveLongTermMemory(userId, { 
-          content: message,
-          response: response,
-          type: 'interaction',
-          mood: mood,
-          topic: topic
-        });
-      }
       return {
         response,
         context: sessionMemory.chat_context
@@ -154,7 +136,7 @@ export class ChatService {
       .join('\n');
   }
 
-  static  LongTerm(isSummarizing, message, response) {
+  static  shouldSaveToLongTerm(isSummarizing, message, response) {
     return isSummarizing; // Properly return the boolean flag
   }
 
