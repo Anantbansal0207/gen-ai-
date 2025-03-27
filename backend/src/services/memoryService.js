@@ -82,9 +82,21 @@ export class MemoryService {
       ).join('\n');
       
       // Request a summary
-      const summaryPrompt = `Summarize the following therapy conversation while preserving key emotional context, important details, and therapeutic insights. Keep the summary concise but comprehensive:
+      const summaryPrompt = `*Task:* Summarize the following therapy conversation segment.
+*Purpose:* Create a concise context summary for the AI therapist to ensure continuity in the ongoing session. This summary will replace the older messages in the conversation history.
+*Instructions:*
+- Focus on the *main topics* discussed (e.g., anxiety, relationship issues, work stress).
+- Capture the *user's key emotional state(s)* and any significant shifts observed.
+- Note *critical details, events, or figures* mentioned by the user that are central to the discussion.
+- Include any specific *problems, goals, or insights* that emerged during this part of the conversation.
+- Briefly mention the *therapist's main line of inquiry or support* offered.
+- *Be concise but comprehensive.* Aim for significantly shorter than the original text while retaining the core therapeutic essence.
+- *Format:* Use clear, narrative sentences or brief bullet points.
 
-      ${conversationText}`;
+*Conversation Segment to Summarize:*
+${conversationText}
+
+*Concise Summary:*`; // Added a marker to encourage immediate summarization
   
       const result = await model.generateContent(summaryPrompt);
       const summary = await result.response.text();
