@@ -77,37 +77,48 @@ export class ChatService {
       );
 
       // Summarize the context if it's getting long
+
       if (sessionMemory.chat_context.length > 10) {
-        console.log(`Context exceeds 10 messages. Initiating Summarization`);
+
+        const isSummarizing = true; // Flag to indicate summarization
+
         sessionMemory.chat_context = await MemoryService.summarizeConversation(sessionMemory.chat_context);
-        console.log(`Conversation Summarized. New Context Length: ${sessionMemory.chat_context.length}`);
+
+        await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
+
         
-        await MemoryService.saveSessionMemory(
-          sessionId,
-          userId,
-          sessionMemory.chat_context
-        );
-      }
+
+        // Now, only save to long-term memory if summarization is happening
+
+        if (this.shouldSaveToLongTerm(isSummarizing, message, response)) {
+
+            await MemoryService.saveLongTermMemory(userId, {
+                content: message,
+                response: response,
+                type: 'summary',
+                mood: await this.analyzeMood(message),
+                topic: await this.analyzeTopic(message),
+            });
+
+        }
+
+    }
 
       // Save important interactions to long-term memory
-      if (this.shouldSaveToLongTerm(message, response)) {
-        console.log(`Preparing to Save Interaction to Long-Term Memory`);
+      const isSummarizing = sessionMemory.chat_context.length > 10; 
+
+      if (this.shouldSaveToLongTerm(isSummarizing, message, response)){
         const mood = await this.analyzeMood(message);
         const topic = await this.analyzeTopic(message);
-
-        console.log(`Interaction Mood: ${mood}, Topic: ${topic}`);
-
-        await MemoryService.saveLongTermMemory(userId, {
+        console.log("this is the topic: "+topic);
+        await MemoryService.saveLongTermMemory(userId, { 
           content: message,
           response: response,
           type: 'interaction',
           mood: mood,
           topic: topic
         });
-
-        console.log(`Interaction Saved to Long-Term Memory`);
       }
-
       return {
         response,
         context: sessionMemory.chat_context
@@ -143,21 +154,8 @@ export class ChatService {
       .join('\n');
   }
 
-  static shouldSaveToLongTerm(message, response) {
-    console.log('Evaluating whether to save interaction to long-term memory');
-    
-    // More sophisticated logic can be added here
-    // Current implementation saves everything
-    // const saveConditions = [
-    //   message.length > 50,  // Longer meaningful messages
-    //   response.length > 30, // Non-trivial responses
-    //   true  // Default fallback
-    // ];
-
-    // const shouldSave = saveConditions.some(condition => condition);
-    
-    console.log(`Decision to save to long-term memory:`);
-    return true;
+  static  LongTerm(isSummarizing, message, response) {
+    return isSummarizing; // Properly return the boolean flag
   }
 
   static async analyzeMood(message) {
