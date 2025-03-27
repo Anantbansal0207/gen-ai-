@@ -54,3 +54,31 @@ export const refreshChatSession = async (sessionId) => {
     throw error;
   }
 };
+export const sendNudgeMessage = async (sessionId) => {
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) throw new Error('No authentication token found');
+
+    console.log(`Sending nudge request for session: ${sessionId}`); // Debug log
+
+    const response = await fetch(`${API_BASE_URL}/api/chatbot/nudge`, { // <--- NEW ENDPOINT
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ sessionId })
+    });
+
+    if (!response.ok) {
+       const errorBody = await response.text(); // Get more details
+      console.error(`Nudge server error: ${response.status}`, errorBody); // Log details
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending nudge message:', error);
+    throw error; // Re-throw to be caught by the component
+  }
+};

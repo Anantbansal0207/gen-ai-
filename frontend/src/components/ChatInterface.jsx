@@ -1,9 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { checkAuthStatus, getSessionId } from '../services/authService';
-import { sendChatMessage, refreshChatSession } from '../services/chatService';
+import { sendChatMessage, refreshChatSession, sendNudgeMessage } from '../services/chatService';
+
+const INACTIVITY_TIMEOUT_MS = 45000; // 45 seconds
+
+// --- Add a buffer time slightly less than the timeout ---
+const NUDGE_BUFFER_MS = INACTIVITY_TIMEOUT_MS * 0.9; // e.g., 40.5 seconds
 
 const ChatInterface = ({ user: propUser }) => {
   const [messages, setMessages] = useState([]);
@@ -11,27 +16,110 @@ const ChatInterface = ({ user: propUser }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(propUser);
+  const [isSendingNudge, setIsSendingNudge] = useState(false);
   const messagesEndRef = useRef(null);
+  const inactivityTimerRef = useRef(null);
   const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
 
+  // --- Use a ref to access the latest messages inside useCallback without adding messages as a dependency ---
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+
+  const clearInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+      // console.log('Inactivity timer cleared');
+    }
+  }, []);
+
+  // --- Modified handleSendNudge ---
+  const handleSendNudge = useCallback(async () => {
+    // Access latest messages via ref
+    const currentMessages = messagesRef.current;
+    const lastMessage = currentMessages[currentMessages.length - 1];
+
+    // --- Enhanced Guard Clauses ---
+    if (isTyping || input.trim() !== '' || isSendingNudge || !sessionId || !currentUser) {
+      // console.log('Nudge condition not met (typing/input/sending/session).');
+      clearInactivityTimer(); // Clear timer if conditions changed (e.g., user started typing)
+      return;
+    }
+
+    // --- Check if the last message was AI and recent ---
+    if (lastMessage && lastMessage.sender === 'ai') {
+      const timeSinceLastMessage = Date.now() - new Date(lastMessage.timestamp).getTime();
+      if (timeSinceLastMessage < NUDGE_BUFFER_MS) {
+        // console.log(`Nudge skipped: Last AI message too recent (${timeSinceLastMessage}ms ago).`);
+        // Don't clear the timer here, let it run out naturally or be cleared by user action
+        // Potentially restart the timer *based on the last AI message's timestamp* if needed,
+        // but for simplicity, let's just prevent the nudge for now.
+        // The main useEffect will handle restarting if needed after user interaction.
+        return; // Exit without nudging
+      }
+    }
+    // --- End of Enhanced Guard Clauses ---
+
+
+    console.log('User inactive, attempting to send nudge...');
+    setIsSendingNudge(true);
+
+    try {
+      const nudgeData = await sendNudgeMessage(sessionId);
+      if (nudgeData && nudgeData.response) {
+        const nudgeMessage = {
+          text: nudgeData.response,
+          sender: 'ai',
+          timestamp: new Date().toISOString(),
+        };
+        // Use functional update to ensure we're working with the latest state
+        setMessages(prev => [...prev, nudgeMessage]);
+        // Timer will be restarted by the main useEffect watching messages
+      } else {
+        console.warn("Nudge response was empty or invalid.");
+      }
+    } catch (error) {
+      console.error('Failed to send nudge:', error);
+      // showError('A small issue occurred while checking in.');
+    } finally {
+      setIsSendingNudge(false);
+    }
+    // Removed dependency on `messages` by using ref
+  }, [sessionId, currentUser, isTyping, input, isSendingNudge, clearInactivityTimer, showError]); // Removed messages
+
+
+  const startInactivityTimer = useCallback(() => {
+    clearInactivityTimer();
+    if (currentUser && sessionId) {
+      inactivityTimerRef.current = setTimeout(handleSendNudge, INACTIVITY_TIMEOUT_MS);
+      // console.log(`Inactivity timer started (${INACTIVITY_TIMEOUT_MS}ms)`);
+    }
+  }, [clearInactivityTimer, handleSendNudge, currentUser, sessionId]);
+
+
   useEffect(() => {
     const verifyUser = async () => {
-      try {
+       // ... (auth logic remains the same) ...
+       try {
+        let userToSet = null;
+        let userSessionId = null;
+
         if (propUser) {
-          setCurrentUser(propUser);
-          const userSessionId = getSessionId(propUser.id);
-          setSessionId(userSessionId);
-          console.log("Using existing session ID:", userSessionId);
-          return;
+          userToSet = propUser;
+        } else {
+          const { user } = await checkAuthStatus();
+          userToSet = user;
         }
-        
-        const { user } = await checkAuthStatus();
-        if (user) {
-          setCurrentUser(user);
-          const userSessionId = getSessionId(user.id);
+
+        if (userToSet) {
+          setCurrentUser(userToSet);
+          userSessionId = getSessionId(userToSet.id);
           setSessionId(userSessionId);
-          console.log("Using existing session ID:", userSessionId);
+          console.log("Using session ID:", userSessionId);
         } else {
           showError("Please sign in to use the chat.");
           navigate('/auth', { state: { from: '/chat' } });
@@ -42,43 +130,88 @@ const ChatInterface = ({ user: propUser }) => {
         navigate('/auth', { state: { from: '/chat' } });
       }
     };
-    
+
     verifyUser();
-  }, [propUser, navigate, showError]);
+    return () => { clearInactivityTimer(); };
+  }, [propUser, navigate, showError, clearInactivityTimer]);
 
+
+  // --- Main useEffect for messages, storage, and timer control ---
   useEffect(() => {
+    // console.log("Messages/Session Effect Triggered"); // Debug log
     if (!sessionId) return;
-    
-    try {
-      const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
-      if (savedMessages) {
-        setMessages(JSON.parse(savedMessages));
-      }
-    } catch (err) {
-      console.error("Error loading previous messages:", err);
-    }
-  }, [sessionId]);
 
-  useEffect(() => {
-    if (sessionId && messages.length > 0) {
-      localStorage.setItem(`chat_messages_${sessionId}`, JSON.stringify(messages));
+    // --- Load messages ---
+    let loadedMessages = [];
+    if (messages.length === 0) { // Only load initially for this session
+        try {
+            const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
+            if (savedMessages) {
+                loadedMessages = JSON.parse(savedMessages);
+                // console.log(`Loaded ${loadedMessages.length} messages from storage.`); // Debug log
+                setMessages(loadedMessages); // Update state with loaded messages
+            }
+        } catch (err) {
+            console.error("Error loading previous messages:", err);
+            localStorage.removeItem(`chat_messages_${sessionId}`);
+        }
     }
-  }, [messages, sessionId]);
+
+
+    // --- Save messages ---
+    // Separate effect for saving to prevent potential issues? Maybe not necessary yet.
+    if (messages.length > 0) {
+        try {
+            // console.log(`Saving ${messages.length} messages to storage.`); // Debug log
+            localStorage.setItem(`chat_messages_${sessionId}`, JSON.stringify(messages));
+        } catch (err) {
+            console.error("Error saving messages:", err);
+            showError("Could not save chat history.");
+        }
+    }
+
+    // --- Inactivity Timer Logic ---
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage) {
+        // console.log("Last message sender:", lastMessage.sender); // Debug log
+        if (lastMessage.sender === 'ai') {
+            // console.log("Starting inactivity timer because last message was from AI."); // Debug log
+            startInactivityTimer();
+        } else {
+            // console.log("Clearing inactivity timer because last message was from User."); // Debug log
+            clearInactivityTimer();
+        }
+    } else {
+        // No messages, ensure timer is clear
+        // console.log("No messages, clearing inactivity timer."); // Debug log
+        clearInactivityTimer();
+    }
+
+    // Scroll to bottom
+    scrollToBottom();
+
+    // Cleanup timer on effect re-run or component unmount
+    // The return function of useEffect handles cleanup BEFORE the next run or on unmount
+    return () => {
+        // console.log("Cleaning up timer in messages/session effect."); // Debug log
+        clearInactivityTimer();
+    };
+    // Dependencies: messages content IS needed here to react to new messages.
+    // sessionId ensures we reload/save for the right session.
+    // start/clear timer functions need to be stable (ensured by useCallback).
+  }, [messages, sessionId, startInactivityTimer, clearInactivityTimer, showError]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
   const handleRefreshSession = async () => {
     if (!sessionId || !currentUser) return;
-
+    clearInactivityTimer(); // Stop timer
     try {
       await refreshChatSession(sessionId);
-      setMessages([]);
+      setMessages([]); // Clear messages
       localStorage.removeItem(`chat_messages_${sessionId}`);
       showSuccess('Chat session refreshed successfully');
     } catch (error) {
@@ -88,45 +221,92 @@ const ChatInterface = ({ user: propUser }) => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || !currentUser || !sessionId) return;
+    // ... (handleSend logic remains the same) ...
+    const trimmedInput = input.trim();
+    if (!trimmedInput || !currentUser || !sessionId || isTyping || isSendingNudge) return;
+
+    clearInactivityTimer(); // Clear timer when user sends
+
+    const newMessage = {
+      text: trimmedInput,
+      sender: 'user',
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, newMessage]); // Use functional update
+    setInput('');
+    setIsTyping(true);
 
     try {
-      const newMessage = {
-        text: input,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages(prev => [...prev, newMessage]);
-      setInput('');
-      setIsTyping(true);
-
-      const responseData = await sendChatMessage(input, sessionId);
-      
+      const responseData = await sendChatMessage(trimmedInput, sessionId);
       const aiResponse = {
         text: responseData.response,
         sender: 'ai',
         timestamp: new Date().toISOString(),
       };
-
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages(prev => [...prev, aiResponse]); // Use functional update
     } catch (error) {
       console.error('Error in chat:', error);
       showError('Failed to get response. Please try again.');
+      // Revert optimistic update on error
+      setMessages(prev => prev.filter(msg => msg.timestamp !== newMessage.timestamp));
     } finally {
       setIsTyping(false);
     }
   };
 
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (e.target.value.trim() !== '') {
+      clearInactivityTimer(); // Clear timer on typing
+    }
+  };
+
+
+  useEffect(() => {
+    // ... (visibility effect remains the same) ...
+     const handleVisibilityChange = () => {
+      if (!sessionId) return;
+
+      if (document.hidden) {
+        // console.log("Tab hidden, clearing timer."); // Debug log
+        clearInactivityTimer();
+      } else {
+        // Tab gained focus, re-evaluate if timer should start
+        // Access latest messages via ref here as well
+        const currentMessages = messagesRef.current;
+        const lastMessage = currentMessages[currentMessages.length - 1];
+        if (lastMessage && lastMessage.sender === 'ai') {
+           // console.log("Tab visible, last message AI, restarting timer."); // Debug log
+           startInactivityTimer();
+        } else {
+            // console.log("Tab visible, no timer restart needed."); // Debug log
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // console.log("Cleaning up visibility listener and timer."); // Debug log
+      clearInactivityTimer();
+    };
+     // Add messagesRef.current to dependencies? No, refs don't go in deps.
+     // The functions depending on the ref should be stable.
+  }, [sessionId, startInactivityTimer, clearInactivityTimer]); // Dependencies seem correct
+
+  // --- JSX Rendering ---
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Chat Header */}
+      {/* Header */}
       <div className="bg-primary/10 p-4 border-b border-primary/20">
-        <div className="flex justify-between items-center">
+         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold text-primary">AI Therapy Chat</h2>
           <button
             onClick={handleRefreshSession}
-            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+            disabled={!currentUser || !sessionId}
           >
             Refresh Session
           </button>
@@ -141,9 +321,10 @@ const ChatInterface = ({ user: propUser }) => {
         )}
       </div>
 
-      {/* Chat Messages */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
+        {/* Welcome Message */}
+        {messages.length === 0 && !isTyping && (
           <div className="flex justify-center items-center h-full">
             <div className="text-center text-primary/50">
               <p className="text-lg font-medium">Welcome to AI Therapy Chat</p>
@@ -151,29 +332,30 @@ const ChatInterface = ({ user: propUser }) => {
             </div>
           </div>
         )}
-        
+        {/* Message List */}
         {messages.map((message, index) => (
           <div
-            key={index}
+            key={`${message.timestamp}-${index}-${message.sender}`} // More specific key
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-2xl p-4 ${
+              className={`max-w-[70%] rounded-2xl p-3 md:p-4 shadow-md ${
                 message.sender === 'user'
-                  ? 'bg-primary text-white'
-                  : 'bg-secondary text-accent'
+                  ? 'bg-primary text-white rounded-br-none'
+                  : 'bg-secondary text-accent rounded-bl-none'
               }`}
             >
-              <p>{message.text}</p>
-              <span className="text-xs opacity-70 mt-2 block">
-                {new Date(message.timestamp).toLocaleTimeString()}
+              <p className="text-sm md:text-base whitespace-pre-wrap">{message.text}</p> {/* Added whitespace-pre-wrap */}
+              <span className="text-xs opacity-70 mt-1 block text-right">
+                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
         ))}
+        {/* Typing Indicator */}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-secondary text-accent rounded-2xl p-4">
+            <div className="bg-secondary text-accent rounded-2xl p-4 rounded-bl-none shadow-md">
               <DotLottieReact
                 src="https://lottie.host/b8087c9b-dcaa-43b3-8d0c-8ced0803325a/GqPRB9yLVk.lottie"
                 style={{ width: 50, height: 30 }}
@@ -187,29 +369,29 @@ const ChatInterface = ({ user: propUser }) => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 p-4">
-        <div className="flex gap-2">
+      <div className="border-t border-primary/20 p-4 bg-background">
+        <div className="flex gap-2 items-center">
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onChange={handleInputChange}
+            onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSend()}
             placeholder="Type your message..."
-            className="flex-1 rounded-full px-6 py-3 bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary"
-            disabled={!currentUser}
+            className="flex-1 rounded-full px-5 py-3 bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary text-accent placeholder-accent/60"
+            disabled={!currentUser || isTyping || isSendingNudge}
           />
           <button
             onClick={handleSend}
-            disabled={isTyping || !currentUser}
-            className="bg-primary text-white rounded-full p-3 hover:bg-primary-hover transition-colors disabled:opacity-50"
+            disabled={isTyping || !currentUser || !input.trim() || isSendingNudge}
+            className="bg-primary text-white rounded-full p-3 hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>
         </div>
         {!currentUser && (
-          <div className="text-center mt-3 text-red-500">
+          <div className="text-center mt-3 text-red-500 text-sm">
             Please sign in to use the chat
           </div>
         )}

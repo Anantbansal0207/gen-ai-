@@ -48,4 +48,24 @@ router.post('/refresh-session', authenticate, async (req, res) => {
   }
 });
 
+router.post('/nudge', authenticate, async (req, res) => {
+  console.log('Nudge endpoint hit'); // Debug log
+  try {
+    const { sessionId } = req.body;
+    const userId = req.user.id;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required for nudge' });
+    }
+
+    // Call a new service method to handle nudge generation
+    const nudgeResponse = await ChatService.generateNudge(userId, sessionId);
+
+    res.status(200).json(nudgeResponse); // Send back the generated nudge message
+
+  } catch (error) {
+    console.error('Nudge generation error:', error);
+    res.status(500).json({ error: 'Failed to generate nudge message' });
+  }
+});
 export default router;

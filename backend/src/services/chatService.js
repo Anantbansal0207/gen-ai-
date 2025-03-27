@@ -1,8 +1,39 @@
+// --- START OF FILE chatService.js (SERVER-SIDE) ---
+
 import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
 import { config } from '../config/index.js';
 import axios from 'axios';
+
+
+// --- Base Therapist Prompt (Defined once for consistency) ---
+const BASE_THERAPIST_PROMPT = `THERAPEUTIC APPROACH:
+- Active, empathetic listening
+- Non-judgmental understanding
+- Strategic emotional exploration
+- Professional, trauma-informed communication
+
+RESPONSE PRINCIPLES:
+- Reflect emotional experiences precisely
+- Guide self-reflection through thoughtful inquiry
+- Maintain compassionate professional boundaries
+- Recognize psychological subtleties
+
+CORE GUIDELINES:
+- Length: 40-100 words
+- Tone: Warmly professional
+- Focus: Client's emotional journey
+- Technique: Dynamic, adaptive support
+
+ETHICAL PRIORITIES:
+- No medical diagnosis
+- Ensure psychological safety
+- Recommend professional help if needed
+- Absolute confidentiality
+
+Respond with genuine empathy, focusing on understanding and facilitating the client's path to emotional insight.`;
+
 
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
@@ -12,7 +43,7 @@ export class ChatService {
     try {
       // Get session context
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
-      
+
       if (!sessionMemory || !sessionMemory.chat_context) {
         console.log(`Creating new session memory for Session: ${sessionId}`);
         sessionMemory = {
@@ -29,7 +60,7 @@ export class ChatService {
       });
 
       console.log(`Current Chat Context Length: ${sessionMemory.chat_context.length}`);
-      console.log("Detailed Chat Context:", JSON.stringify(sessionMemory.chat_context, null, 2));
+      // console.log("Detailed Chat Context:", JSON.stringify(sessionMemory.chat_context, null, 2)); // Keep commented unless debugging specific context issues
 
       // Query long-term memory for relevant context
       console.log(`Querying Long-Term Memory for User: ${userId}`);
@@ -47,41 +78,17 @@ export class ChatService {
        if (relevantContext) {
          console.log(`Adding Relevant Memory Context: ${relevantContext}`);
          contextWithMemories.unshift({
-           role: 'user',
+           role: 'user', // Using 'user' role for context injection seems to work well with Gemini
            content: `Relevant past information: ${relevantContext}`
          });
        }
 
-      // Generate response with full context
+      // Generate response with full context using the base therapist prompt
       console.log(`Generating Chat Response`);
       const response = await generateChatResponse(
         message,
         contextWithMemories,
-        `THERAPEUTIC APPROACH:
-      - Active, empathetic listening
-      - Non-judgmental understanding
-      - Strategic emotional exploration
-      - Professional, trauma-informed communication
-      
-      RESPONSE PRINCIPLES:
-      - Reflect emotional experiences precisely
-      - Guide self-reflection through thoughtful inquiry
-      - Maintain compassionate professional boundaries
-      - Recognize psychological subtleties
-      
-      CORE GUIDELINES:
-      - Length: 40-100 words
-      - Tone: Warmly professional
-      - Focus: Client's emotional journey
-      - Technique: Dynamic, adaptive support
-      
-      ETHICAL PRIORITIES:
-      - No medical diagnosis
-      - Ensure psychological safety
-      - Recommend professional help if needed
-      - Absolute confidentiality
-      
-      Respond with genuine empathy, focusing on understanding and facilitating the client's path to emotional insight.`
+        BASE_THERAPIST_PROMPT // Use the defined base prompt
       );
 
       console.log(`Generated Response: ${response}`);
@@ -100,46 +107,133 @@ export class ChatService {
         sessionMemory.chat_context
       );
 
-      // Summarize the context if it's getting long
-
+      // Summarize the context and potentially save to long-term memory
       if (sessionMemory.chat_context.length > 10) {
-
         const isSummarizing = true; // Flag to indicate summarization
+        console.log(`Context length > 10, attempting summarization for Session: ${sessionId}`);
 
-        sessionMemory.chat_context = await MemoryService.summarizeConversation(sessionMemory.chat_context);
-        await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
+        // Perform summarization
+        const summarizedContext = await MemoryService.summarizeConversation(sessionMemory.chat_context);
 
-        // Now, only save to long-term memory if summarization is happening
+        // Check if summarization actually changed the context (it might return original if too short)
+        if (summarizedContext !== sessionMemory.chat_context) {
+          sessionMemory.chat_context = summarizedContext;
+          console.log(`Summarization complete. New context length: ${sessionMemory.chat_context.length}`);
 
-        if (this.shouldSaveToLongTerm(isSummarizing, message, response)){
-          const mood = await this.analyzeMood(message);
-          const topic = await this.analyzeTopic(message);
-          console.log("this is the topic: "+topic);
-          await MemoryService.saveLongTermMemory(userId, { 
-            content: message,
-            response: response,
-            type: 'summary',
-            mood: mood,
-            topic: topic
-          });
+          // Save the new summarized context back to Redis
+          await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
+
+          // Save to long-term memory only after successful summarization
+          if (this.shouldSaveToLongTerm(isSummarizing, message, response)) {
+            console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
+            const mood = await this.analyzeMood(message); // Analyze original user message
+            const topic = await this.analyzeTopic(message); // Analyze original user message
+            console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
+            await MemoryService.saveLongTermMemory(userId, {
+              content: message, // Original user message
+              response: response, // AI response to that message
+              type: 'summary_interaction', // Mark as part of a summarized interaction
+              mood: mood,
+              topic: topic
+            });
+          }
+        } else {
+          console.log(`Summarization skipped or failed for Session: ${sessionId}`);
         }
+      }
 
-    }
       return {
         response,
-        context: sessionMemory.chat_context
+        context: sessionMemory.chat_context // Return the potentially updated context
       };
     } catch (error) {
       console.error('Critical Error Processing Message:', error);
       console.error('Error Details:', {
         userId,
         sessionId,
-        message,
+        message: message ? message.substring(0, 100) + '...' : 'N/A', // Avoid logging potentially large messages fully
         errorName: error.name,
         errorMessage: error.message,
-        errorStack: error.stack
+        errorStack: error.stack // Include stack for better debugging
       });
-      throw error;
+      // Consider throwing a more user-friendly error or a specific error type
+      throw new Error('Failed to process chat message due to an internal server error.');
+    }
+  }
+
+  // --- NEW METHOD for generating inactivity nudge ---
+  static async generateNudge(userId, sessionId) {
+    console.log(`Generating nudge for User: ${userId}, Session: ${sessionId}`);
+
+    try {
+      // Get current session context
+      const sessionMemory = await MemoryService.getSessionMemory(sessionId);
+
+      // Validate session and context existence
+      if (!sessionMemory || !sessionMemory.chat_context || sessionMemory.chat_context.length === 0) {
+        console.warn(`Cannot generate nudge: Session ${sessionId} not found or has empty context.`);
+        // Return null or an empty response object, signaling no nudge could be generated
+        return { response: null };
+      }
+
+      // Check if the last message was already a nudge or very recent to avoid spamming
+      const lastMessage = sessionMemory.chat_context[sessionMemory.chat_context.length - 1];
+      // Add logic here if needed, e.g., check timestamp or content of last message
+
+      // Prepare a specific system prompt for the nudge
+      const nudgeSystemPrompt = `You are the AI therapist from the ongoing conversation. The user has paused for a short while after your last response. Offer a *gentle, brief, and non-pressuring* check-in to re-engage them softly. Avoid making demands or sounding impatient. Examples: "Just checking in, take your time.", "No rush, just wanted to see how you're processing that.", "Any thoughts emerging?", "Is there anything else on your mind regarding that?". Keep it under 20 words. Your persona MUST remain consistent with the main therapist prompt: ${BASE_THERAPIST_PROMPT}`;
+
+      // The prompt for sendMessage can be minimal or empty, as the system prompt guides the action
+      const nudgeUserPrompt = ""; // No specific user input needed for a nudge
+
+      console.log(`Generating Nudge Response using ${sessionMemory.chat_context.length} context items for Session: ${sessionId}`);
+
+      // Generate the nudge using the current context and the specific nudge system prompt
+      const nudgeResponseText = await generateChatResponse(
+        nudgeUserPrompt,
+        sessionMemory.chat_context, // Provide the current conversation history
+        nudgeSystemPrompt // Use the specific nudge system prompt
+      );
+
+      // Handle potential empty or failed generation
+      if (!nudgeResponseText || nudgeResponseText.trim() === "") {
+         console.warn(`Nudge generation resulted in empty response for Session: ${sessionId}`);
+         return { response: null }; // Don't save or send an empty nudge
+      }
+
+      console.log(`Generated Nudge: ${nudgeResponseText}`);
+
+      // Add the AI's nudge message to the context
+      sessionMemory.chat_context.push({
+        role: 'assistant',
+        content: nudgeResponseText
+      });
+
+      // Save updated session memory (including the nudge)
+      console.log(`Saving Session Memory after nudge for Session: ${sessionId}`);
+      await MemoryService.saveSessionMemory(
+        sessionId,
+        userId,
+        sessionMemory.chat_context
+      );
+
+      // Return the nudge response to the frontend route handler
+      return {
+        response: nudgeResponseText,
+        // context: sessionMemory.chat_context // You could return the context if needed
+      };
+
+    } catch (error) {
+      console.error('Critical Error Generating Nudge:', error);
+      console.error('Error Details:', {
+          userId,
+          sessionId,
+          errorName: error.name,
+          errorMessage: error.message,
+          // Avoid logging full context here unless necessary for debugging
+      });
+      // Throw the error so the route handler can send a 500 response
+      throw new Error('Failed to generate nudge message due to an internal server error.');
     }
   }
 
