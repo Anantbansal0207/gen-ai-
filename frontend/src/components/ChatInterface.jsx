@@ -5,10 +5,35 @@ import { useNavigate } from 'react-router-dom';
 import { checkAuthStatus, getSessionId } from '../services/authService';
 import { sendChatMessage, refreshChatSession, sendNudgeMessage } from '../services/chatService';
 
-const INACTIVITY_TIMEOUT_MS = 45000; // 45 seconds
+// --- Define Timeout Range ---
+const MIN_INACTIVITY_TIMEOUT_MS = 15000; // 15 seconds
+const MAX_INACTIVITY_TIMEOUT_MS = 35000; // 35 seconds
+const UPPER_RANGE_PROBABILITY = 0.75; // 75% chance to be in the upper part
 
-// --- Add a buffer time slightly less than the timeout ---
-const NUDGE_BUFFER_MS = INACTIVITY_TIMEOUT_MS * 0.9; // e.g., 40.5 seconds
+// --- Adjust Nudge Buffer - Base it on the MINIMUM timeout to be safe ---
+// Prevent nudging if last AI message was less than ~90% of the MINIMUM possible timeout ago.
+const NUDGE_BUFFER_MS = MIN_INACTIVITY_TIMEOUT_MS * 0.9; // ~13.5 seconds
+
+// --- Helper Function for Randomized Timeout ---
+const getRandomizedTimeout = () => {
+  const range = MAX_INACTIVITY_TIMEOUT_MS - MIN_INACTIVITY_TIMEOUT_MS; // 20000ms
+  // Determine the split point based on the probability for the *lower* range
+  const splitPointMs = MIN_INACTIVITY_TIMEOUT_MS + range * (1 - UPPER_RANGE_PROBABILITY); // 15000 + 20000 * 0.25 = 20000ms
+
+  let timeout;
+  if (Math.random() < UPPER_RANGE_PROBABILITY) {
+    // 75% chance: Generate timeout in the upper range [splitPointMs, MAX_INACTIVITY_TIMEOUT_MS]
+    // Range size: MAX_INACTIVITY_TIMEOUT_MS - splitPointMs + 1
+    timeout = Math.floor(Math.random() * (MAX_INACTIVITY_TIMEOUT_MS - splitPointMs + 1)) + splitPointMs;
+  } else {
+    // 25% chance: Generate timeout in the lower range [MIN_INACTIVITY_TIMEOUT_MS, splitPointMs - 1]
+    // Range size: splitPointMs - MIN_INACTIVITY_TIMEOUT_MS
+    timeout = Math.floor(Math.random() * (splitPointMs - MIN_INACTIVITY_TIMEOUT_MS)) + MIN_INACTIVITY_TIMEOUT_MS;
+  }
+  // console.log(`Generated timeout: ${timeout}ms`); // For debugging
+  return timeout;
+};
+
 
 const ChatInterface = ({ user: propUser }) => {
   const [messages, setMessages] = useState([]);
@@ -95,10 +120,11 @@ const ChatInterface = ({ user: propUser }) => {
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
     if (currentUser && sessionId) {
-      inactivityTimerRef.current = setTimeout(handleSendNudge, INACTIVITY_TIMEOUT_MS);
-      // console.log(`Inactivity timer started (${INACTIVITY_TIMEOUT_MS}ms)`);
+      const randomTimeout = getRandomizedTimeout(); // Get the randomized timeout value
+      // console.log(`Starting inactivity timer with ${randomTimeout}ms`); // Debug log
+      inactivityTimerRef.current = setTimeout(handleSendNudge, randomTimeout); // Use the random value
     }
-  }, [clearInactivityTimer, handleSendNudge, currentUser, sessionId]);
+  }, [clearInactivityTimer, handleSendNudge, currentUser, sessionId]); // Dependencies look correct
 
 
   useEffect(() => {
