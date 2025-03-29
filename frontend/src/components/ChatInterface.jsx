@@ -258,11 +258,18 @@ const ChatInterface = ({ user: propUser }) => {
 
   // New effect to trigger auto-welcome message when needed
   useEffect(() => {
-    if (sessionId && currentUser && messages.length === 0 && !isTyping && !hasInitialized) {
-      console.log("No messages found, triggering auto-welcome message");
-      sendAutoWelcomeMessage();
+    if (sessionId && currentUser && !isTyping && !hasInitialized) {
+      // Check localStorage before triggering welcome message
+      const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
+      if (!savedMessages || JSON.parse(savedMessages).length === 0) {
+        console.log("No messages found, triggering auto-welcome message");
+        sendAutoWelcomeMessage();
+      } else {
+        // Messages exist in storage, just mark as initialized
+        setHasInitialized(true);
+      }
     }
-  }, [sessionId, currentUser, messages.length, isTyping, hasInitialized, sendAutoWelcomeMessage]);
+  }, [sessionId, currentUser, isTyping, hasInitialized, sendAutoWelcomeMessage]);
 
 
   const scrollToBottom = () => {
