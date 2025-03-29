@@ -138,12 +138,12 @@ export class ChatService {
       }
 
       // Only add user message to context if it's not an auto welcome
-      if (!isAutoWelcome) {
+      
         sessionMemory.chat_context.push({
           role: 'user',
           content: message
         });
-      }
+      
 
       console.log(`Current Chat Context Length: ${sessionMemory.chat_context.length}`);
 
