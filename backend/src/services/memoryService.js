@@ -37,10 +37,10 @@ export class MemoryService {
       return false;
     }
   }
-  async getUserProfile(userId) {
+  static async getUserProfile(userId) {
     try {
       const profileKey = `user:${userId}:profile`;
-      const profileData = await this.redisClient.get(profileKey);
+      const profileData = redis.get(profileKey);
       
       if (!profileData) {
         return null;
@@ -54,10 +54,10 @@ export class MemoryService {
   }
   
   // Save user profile data
-  async saveUserProfile(userId, profileData) {
+  static async saveUserProfile(userId, profileData) {
     try {
       const profileKey = `user:${userId}:profile`;
-      await this.redisClient.set(profileKey, JSON.stringify(profileData));
+      await redis.set(profileKey, JSON.stringify(profileData));
       return true;
     } catch (error) {
       console.error('Error saving user profile:', error);
@@ -66,7 +66,7 @@ export class MemoryService {
   }
   
   // Update user profile data (merge with existing)
-  async updateUserProfile(userId, updatedFields) {
+  static async updateUserProfile(userId, updatedFields) {
     try {
       const currentProfile = await this.getUserProfile(userId) || {};
       const updatedProfile = { ...currentProfile, ...updatedFields };

@@ -4,6 +4,7 @@ import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { checkAuthStatus, getSessionId } from '../services/authService';
 import { sendChatMessage, refreshChatSession, sendNudgeMessage } from '../services/chatService';
+import LoadingDots from './LoadingDots';
 
 // --- Define Timeout Range ---
 const MIN_INACTIVITY_TIMEOUT_MS = 15000; // 15 seconds
@@ -42,6 +43,7 @@ const ChatInterface = ({ user: propUser }) => {
   const [sessionId, setSessionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(propUser);
   const [isSendingNudge, setIsSendingNudge] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const { showSuccess, showError } = useToast();
@@ -126,6 +128,34 @@ const ChatInterface = ({ user: propUser }) => {
     }
   }, [clearInactivityTimer, handleSendNudge, currentUser, sessionId]); // Dependencies look correct
 
+  // New function to send an empty message to trigger auto-welcome
+  const sendAutoWelcomeMessage = useCallback(async () => {
+    if (!sessionId || !currentUser || isTyping || isSendingNudge) return;
+    
+    console.log('Sending auto-welcome message...');
+    setIsTyping(true);
+    
+    try {
+      const responseData = await sendChatMessage("", sessionId);
+      if (responseData && responseData.response) {
+        const welcomeMessage = {
+          text: responseData.response,
+          sender: 'ai',
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, welcomeMessage]);
+      } else {
+        console.warn("Auto-welcome response was empty or invalid.");
+      }
+    } catch (error) {
+      console.error('Failed to get auto-welcome message:', error);
+      // Don't show error to user for auto-welcome failures
+    } finally {
+      setIsTyping(false);
+      setHasInitialized(true);
+    }
+  }, [sessionId, currentUser, isTyping, isSendingNudge]);
+
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -183,7 +213,6 @@ const ChatInterface = ({ user: propUser }) => {
         }
     }
 
-
     // --- Save messages ---
     // Separate effect for saving to prevent potential issues? Maybe not necessary yet.
     if (messages.length > 0) {
@@ -227,6 +256,14 @@ const ChatInterface = ({ user: propUser }) => {
     // start/clear timer functions need to be stable (ensured by useCallback).
   }, [messages, sessionId, startInactivityTimer, clearInactivityTimer, showError]);
 
+  // New effect to trigger auto-welcome message when needed
+  useEffect(() => {
+    if (sessionId && currentUser && messages.length === 0 && !isTyping && !hasInitialized) {
+      console.log("No messages found, triggering auto-welcome message");
+      sendAutoWelcomeMessage();
+    }
+  }, [sessionId, currentUser, messages.length, isTyping, hasInitialized, sendAutoWelcomeMessage]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -239,6 +276,7 @@ const ChatInterface = ({ user: propUser }) => {
       await refreshChatSession(sessionId);
       setMessages([]); // Clear messages
       localStorage.removeItem(`chat_messages_${sessionId}`);
+      setHasInitialized(false); // Reset initialization flag to trigger welcome message
       showSuccess('Chat session refreshed successfully');
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -349,12 +387,12 @@ const ChatInterface = ({ user: propUser }) => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Welcome Message */}
+        {/* Welcome Message - Only shown when no messages AND not typing */}
         {messages.length === 0 && !isTyping && (
           <div className="flex justify-center items-center h-full">
             <div className="text-center text-primary/50">
               <p className="text-lg font-medium">Welcome to AI Therapy Chat</p>
-              <p className="text-sm">Send a message to start your conversation</p>
+              <p className="text-sm">Initializing your session...</p>
             </div>
           </div>
         )}
@@ -380,17 +418,13 @@ const ChatInterface = ({ user: propUser }) => {
         ))}
         {/* Typing Indicator */}
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-secondary text-accent rounded-2xl p-4 rounded-bl-none shadow-md">
-              <DotLottieReact
-                src="https://lottie.host/b8087c9b-dcaa-43b3-8d0c-8ced0803325a/GqPRB9yLVk.lottie"
-                style={{ width: 50, height: 30 }}
-                loop
-                autoplay
-              />
-            </div>
-          </div>
-        )}
+  <div className="flex justify-start">
+    <div className="bg-secondary text-accent rounded-2xl p-4 rounded-bl-none shadow-md flex items-center">
+      <LoadingDots />
+      <span className="text-sm ml-2">AI is thinking...</span>
+    </div>
+  </div>
+)}
         <div ref={messagesEndRef} />
       </div>
 

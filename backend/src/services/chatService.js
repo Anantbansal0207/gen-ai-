@@ -5,7 +5,9 @@ import { config } from '../config/index.js';
 import axios from 'axios';
 
 // --- Base Therapist Prompt (Defined once for consistency) ---
-const BASE_THERAPIST_PROMPT = `THERAPEUTIC APPROACH:
+const BASE_THERAPIST_PROMPT = `
+  You are Dr. Alex Morgan, an AI therapist.
+  THERAPEUTIC APPROACH:
 - Active, empathetic listening
 - Non-judgmental understanding
 - Strategic emotional exploration
@@ -40,6 +42,16 @@ Mention that you're here to listen and support them.
 Keep your introduction under 100 words and make it feel welcoming.
 Sign your message as "- Dr. Alex"`;
 
+// Welcome back prompt for returning users
+const WELCOME_BACK_PROMPT = `You are Dr. Alex Morgan, an AI therapist welcoming back {userName}.
+Create a warm, personal welcome back message that:
+1. Greets them by name
+2. Expresses genuine pleasure at seeing them again
+3. References that you've spoken before (but don't mention specific details from previous sessions)
+4. Invites them to share what's on their mind today
+Keep it under 100 words and maintain a warm, supportive tone.
+Sign your message as "- Dr. Alex"`;
+
 // Onboarding questions prompt to gather information naturally
 const ONBOARDING_PROMPT = `You are Dr. Alex Morgan, an AI therapist having a conversation with a new client named {userName}.
 This is an initial session to get to know them better.
@@ -63,13 +75,15 @@ const PROBING_NUDGE_PROBABILITY = 0.6;
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
     console.log(`Processing message for User: ${userId}, Session: ${sessionId}`);
-    console.log(`Message Content: ${message}`);
+    console.log(`Message Content: ${message || 'EMPTY (Auto Welcome)'}`);
 
     try {
       // Get session context
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
       let isFirstInteraction = false;
       let isOnboarding = false;
+      let isWelcomeBack = false;
+      let isAutoWelcome = !message || message.trim() === ''; // Check if this is an auto welcome (empty message)
       let customPrompt = BASE_THERAPIST_PROMPT;
       let userName = null;
 
@@ -103,15 +117,25 @@ export class ChatService {
       // If user has a complete profile, use personalized prompt
       else if (userProfile && userProfile.name && userProfile.onboardingComplete) {
         userName = userProfile.name;
-        customPrompt = PERSONAL_CONVO_PROMPT.replace('{userName}', userName);
-        console.log(`Personalized conversation for returning user ${userName}`);
+        
+        // If this is an auto welcome call for a returning user, use the welcome back prompt
+        if (isAutoWelcome) {
+          isWelcomeBack = true;
+          customPrompt = WELCOME_BACK_PROMPT.replace('{userName}', userName);
+          console.log(`Welcome back trigger for returning user ${userName}`);
+        } else {
+          customPrompt = PERSONAL_CONVO_PROMPT.replace('{userName}', userName);
+          console.log(`Personalized conversation for returning user ${userName}`);
+        }
       }
 
-      // Add user message to context
-      sessionMemory.chat_context.push({
-        role: 'user',
-        content: message
-      });
+      // Only add user message to context if it's not an auto welcome
+      if (!isAutoWelcome) {
+        sessionMemory.chat_context.push({
+          role: 'user',
+          content: message
+        });
+      }
 
       console.log(`Current Chat Context Length: ${sessionMemory.chat_context.length}`);
 
@@ -119,7 +143,8 @@ export class ChatService {
       let relevantMemories = [];
       let relevantContext = '';
       
-      if (!isFirstInteraction && !isOnboarding) {
+      if (!isFirstInteraction && !isOnboarding && !isWelcomeBack && !isAutoWelcome) {
+        // Only query memory for actual user messages, not auto welcomes
         // Query long-term memory for relevant context
         console.log(`Querying Long-Term Memory for User: ${userId}`);
         relevantMemories = await MemoryService.queryLongTermMemory(
@@ -150,9 +175,13 @@ export class ChatService {
       }
 
       // Generate response with full context using the appropriate prompt
-      console.log(`Generating Chat Response with ${isFirstInteraction ? 'intro' : isOnboarding ? 'onboarding' : 'standard'} prompt`);
+      console.log(`Generating ${isAutoWelcome ? 'Auto Welcome' : 'Chat'} Response with ${isFirstInteraction ? 'intro' : isWelcomeBack ? 'welcome back' : isOnboarding ? 'onboarding' : 'standard'} prompt`);
+      
+      // For auto welcome, we pass an empty message
+      const userMessage = isAutoWelcome ? '' : message;
+      
       const response = await generateChatResponse(
-        message,
+        userMessage,
         contextWithMemories,
         customPrompt
       );
@@ -164,7 +193,9 @@ export class ChatService {
         role: 'assistant',
         content: response
       });
-      if (isFirstInteraction && !userProfile) {
+      
+      if (isFirstInteraction && !userProfile && !isAutoWelcome) {
+        // Only try to extract names from actual user messages, not auto welcomes
         const extractedName = await this.extractUserName(message, response);
         if (extractedName) {
           console.log(`Extracted user name: ${extractedName}`);
@@ -193,7 +224,8 @@ export class ChatService {
       );
 
       // Summarize the context and potentially save to long-term memory
-      if (sessionMemory.chat_context.length > 10) {
+      // Skip summarization for auto welcome messages since they're not actual interactions
+      if (sessionMemory.chat_context.length > 10 && !isAutoWelcome) {
         const isSummarizing = true; // Flag to indicate summarization
         console.log(`Context length > 10, attempting summarization for Session: ${sessionId}`);
 
@@ -236,7 +268,7 @@ export class ChatService {
       console.error('Error Details:', {
         userId,
         sessionId,
-        message: message ? message.substring(0, 100) + '...' : 'N/A', // Avoid logging potentially large messages fully
+        message: message ? message.substring(0, 100) + '...' : 'EMPTY (Auto Welcome)', // Avoid logging potentially large messages fully
         errorName: error.name,
         errorMessage: error.message,
         errorStack: error.stack // Include stack for better debugging
@@ -370,7 +402,13 @@ export class ChatService {
   }
 
   static async analyzeMood(message) {
-    console.log(`Analyzing Mood for Message: ${message.substring(0, 50)}...`);
+    console.log(`Analyzing Mood for Message: ${message ? message.substring(0, 50) + '...' : 'EMPTY'}`);
+    
+    // Skip mood analysis for empty messages (auto welcomes)
+    if (!message || message.trim() === '') {
+      return "unknown";
+    }
+    
     try {
       const HUGGINGFACE_MOOD_API_URL="https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base";
       console.log(`Sending Mood Analysis Request to: ${HUGGINGFACE_MOOD_API_URL}`);
@@ -408,6 +446,11 @@ export class ChatService {
   }
   static async extractUserName(userMessage, aiResponse) {
     try {
+      // Skip name extraction for empty messages (auto welcomes)
+      if (!userMessage || userMessage.trim() === '') {
+        return null;
+      }
+      
       // Create a prompt to extract the name
       const extractPrompt = `
       Based on this conversation exchange, extract the user's name if they shared it.
@@ -429,7 +472,13 @@ export class ChatService {
   }
 
   static async analyzeTopic(message) {
-    console.log(`Analyzing Topic for Message: ${message.substring(0, 50)}...`);
+    console.log(`Analyzing Topic for Message: ${message ? message.substring(0, 50) + '...' : 'EMPTY'}`);
+    
+    // Skip topic analysis for empty messages (auto welcomes)
+    if (!message || message.trim() === '') {
+      return "auto-welcome";
+    }
+    
     try {
       // Validate input
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -515,7 +564,12 @@ export class ChatService {
 
   // Fallback method using keyword matching
   static analyzeTopicWithKeywords(message) {
-    console.log(`Analyzing Topic with Keyword Method: ${message.substring(0, 50)}...`);
+    console.log(`Analyzing Topic with Keyword Method: ${message ? message.substring(0, 50) + '...' : 'EMPTY'}`);
+    
+    if (!message || message.trim() === '') {
+      return "auto-welcome";
+    }
+    
     const messageLower = message.toLowerCase();
     
     // Topic keywords mapping
