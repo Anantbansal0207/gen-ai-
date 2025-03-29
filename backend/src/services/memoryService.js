@@ -37,6 +37,45 @@ export class MemoryService {
       return false;
     }
   }
+  async getUserProfile(userId) {
+    try {
+      const profileKey = `user:${userId}:profile`;
+      const profileData = await this.redisClient.get(profileKey);
+      
+      if (!profileData) {
+        return null;
+      }
+      
+      return JSON.parse(profileData);
+    } catch (error) {
+      console.error('Error retrieving user profile:', error);
+      return null;
+    }
+  }
+  
+  // Save user profile data
+  async saveUserProfile(userId, profileData) {
+    try {
+      const profileKey = `user:${userId}:profile`;
+      await this.redisClient.set(profileKey, JSON.stringify(profileData));
+      return true;
+    } catch (error) {
+      console.error('Error saving user profile:', error);
+      return false;
+    }
+  }
+  
+  // Update user profile data (merge with existing)
+  async updateUserProfile(userId, updatedFields) {
+    try {
+      const currentProfile = await this.getUserProfile(userId) || {};
+      const updatedProfile = { ...currentProfile, ...updatedFields };
+      return await this.saveUserProfile(userId, updatedProfile);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return false;
+    }
+  }
 
   static async getSessionMemory(sessionId) {
     try {

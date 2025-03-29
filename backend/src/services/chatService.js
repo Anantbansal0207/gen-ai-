@@ -1,11 +1,8 @@
-// --- START OF FILE chatService.js (SERVER-SIDE) ---
-
 import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
 import { config } from '../config/index.js';
 import axios from 'axios';
-
 
 // --- Base Therapist Prompt (Defined once for consistency) ---
 const BASE_THERAPIST_PROMPT = `THERAPEUTIC APPROACH:
@@ -19,6 +16,7 @@ RESPONSE PRINCIPLES:
 - Guide self-reflection through thoughtful inquiry
 - Maintain compassionate professional boundaries
 - Recognize psychological subtleties
+- Personalize conversation by using the client's name occasionally
 
 CORE GUIDELINES:
 - Length: 40-100 words
@@ -33,6 +31,33 @@ ETHICAL PRIORITIES:
 - Absolute confidentiality
 
 Respond with genuine empathy, focusing on understanding and facilitating the client's path to emotional insight.`;
+
+// New personalized introduction prompt
+const INTRO_PROMPT = `You are an AI therapist named Dr. Alex Morgan. 
+Introduce yourself warmly and briefly to the user.
+Ask for their name in a conversational way.
+Mention that you're here to listen and support them.
+Keep your introduction under 100 words and make it feel welcoming.
+Sign your message as "- Dr. Alex"`;
+
+// Onboarding questions prompt to gather information naturally
+const ONBOARDING_PROMPT = `You are Dr. Alex Morgan, an AI therapist having a conversation with a new client named {userName}.
+This is an initial session to get to know them better.
+Ask ONE natural, conversational question at a time from the following list (don't ask multiple questions at once):
+1. What brings them to therapy today or what they hope to work on
+2. How they're feeling overall lately (to assess general mood)
+3. What aspects of their life they'd like to discuss (work, relationships, personal growth)
+4. What they've found helpful in managing their wellbeing in the past
+
+Be warm, empathetic, and conversational - avoid clinical or diagnostic language.
+Respond to what they share before asking the next question.
+Sign your message as "- Dr. Alex"`;
+
+const PERSONAL_CONVO_PROMPT = `You are Dr. Alex Morgan, an AI therapist talking with {userName}.
+You already know them from previous conversations.
+Refer to their previous topics and feelings when appropriate.
+Use their name occasionally in your responses to maintain a personal connection.
+Remember to sign your messages as "- Dr. Alex"`;
 const PROBING_NUDGE_PROBABILITY = 0.6;
 
 export class ChatService {
@@ -43,7 +68,15 @@ export class ChatService {
     try {
       // Get session context
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
+      let isFirstInteraction = false;
+      let isOnboarding = false;
+      let customPrompt = BASE_THERAPIST_PROMPT;
+      let userName = null;
 
+      // Get user profile data if it exists
+      const userProfile = await MemoryService.getUserProfile(userId);
+
+      // Check if this is a brand new user with no history
       if (!sessionMemory || !sessionMemory.chat_context) {
         console.log(`Creating new session memory for Session: ${sessionId}`);
         sessionMemory = {
@@ -51,6 +84,27 @@ export class ChatService {
           user_id: userId,
           chat_context: []
         };
+        
+        // If user has no profile, this is the first interaction ever
+        if (!userProfile || !userProfile.name) {
+          isFirstInteraction = true;
+          customPrompt = INTRO_PROMPT;
+          console.log('First interaction detected, using introduction prompt');
+        }
+      }
+      
+      // Check if we're in the onboarding phase (user has started but not completed profile)
+      if (userProfile && userProfile.name && !userProfile.onboardingComplete) {
+        isOnboarding = true;
+        userName = userProfile.name;
+        customPrompt = ONBOARDING_PROMPT.replace('{userName}', userName);
+        console.log(`Onboarding phase for user ${userName}`);
+      } 
+      // If user has a complete profile, use personalized prompt
+      else if (userProfile && userProfile.name && userProfile.onboardingComplete) {
+        userName = userProfile.name;
+        customPrompt = PERSONAL_CONVO_PROMPT.replace('{userName}', userName);
+        console.log(`Personalized conversation for returning user ${userName}`);
       }
 
       // Add user message to context
@@ -60,35 +114,47 @@ export class ChatService {
       });
 
       console.log(`Current Chat Context Length: ${sessionMemory.chat_context.length}`);
-      // console.log("Detailed Chat Context:", JSON.stringify(sessionMemory.chat_context, null, 2)); // Keep commented unless debugging specific context issues
 
-      // Query long-term memory for relevant context
-      console.log(`Querying Long-Term Memory for User: ${userId}`);
-      const relevantMemories = await MemoryService.queryLongTermMemory(
-        userId,
-        message
-      );
+      // For first-time users, don't query memory since there isn't any
+      let relevantMemories = [];
+      let relevantContext = '';
+      
+      if (!isFirstInteraction && !isOnboarding) {
+        // Query long-term memory for relevant context
+        console.log(`Querying Long-Term Memory for User: ${userId}`);
+        relevantMemories = await MemoryService.queryLongTermMemory(
+          userId,
+          message
+        );
 
-      console.log(`Found ${relevantMemories.length} Relevant Memories`);
+        console.log(`Found ${relevantMemories.length} Relevant Memories`);
+        relevantContext = this.formatContextFromMemories(relevantMemories);
+      }
 
-      const relevantContext = this.formatContextFromMemories(relevantMemories);
+      // Add system message with relevant memories if any
+      let contextWithMemories = [...sessionMemory.chat_context];
+      if (relevantContext) {
+        console.log(`Adding Relevant Memory Context: ${relevantContext}`);
+        contextWithMemories.unshift({
+          role: 'user', // Using 'user' role for context injection seems to work well with Gemini
+          content: `Relevant past information: ${relevantContext}`
+        });
+      }
 
-       // Add system message with relevant memories if any
-       let contextWithMemories = [...sessionMemory.chat_context];
-       if (relevantContext) {
-         console.log(`Adding Relevant Memory Context: ${relevantContext}`);
-         contextWithMemories.unshift({
-           role: 'user', // Using 'user' role for context injection seems to work well with Gemini
-           content: `Relevant past information: ${relevantContext}`
-         });
-       }
+      // If we have user profile info, add it to the context
+      if (userName) {
+        contextWithMemories.unshift({
+          role: 'user',
+          content: `Important: The client's name is ${userName}. Use their name occasionally in your responses.`
+        });
+      }
 
-      // Generate response with full context using the base therapist prompt
-      console.log(`Generating Chat Response`);
+      // Generate response with full context using the appropriate prompt
+      console.log(`Generating Chat Response with ${isFirstInteraction ? 'intro' : isOnboarding ? 'onboarding' : 'standard'} prompt`);
       const response = await generateChatResponse(
         message,
         contextWithMemories,
-        BASE_THERAPIST_PROMPT // Use the defined base prompt
+        customPrompt
       );
 
       console.log(`Generated Response: ${response}`);
@@ -98,6 +164,25 @@ export class ChatService {
         role: 'assistant',
         content: response
       });
+      if (isFirstInteraction && !userProfile) {
+        const extractedName = await this.extractUserName(message, response);
+        if (extractedName) {
+          console.log(`Extracted user name: ${extractedName}`);
+          await MemoryService.saveUserProfile(userId, {
+            name: extractedName,
+            onboardingComplete: false,
+            firstSessionDate: new Date().toISOString()
+          });
+          // Update userName for the current session
+          userName = extractedName;
+        }
+      }
+      
+      // If in onboarding, check if we should mark onboarding as complete
+      if (isOnboarding && sessionMemory.chat_context.length >= 10) {
+        console.log(`Marking onboarding as complete for user ${userName}`);
+        await MemoryService.updateUserProfile(userId, { onboardingComplete: true });
+      }
 
       // Save updated session memory
       console.log(`Saving Session Memory for Session: ${sessionId}`);
@@ -319,6 +404,27 @@ export class ChatService {
         apiResponse: error.response ? error.response.data : 'No API response'
       });
       return "unknown";
+    }
+  }
+  static async extractUserName(userMessage, aiResponse) {
+    try {
+      // Create a prompt to extract the name
+      const extractPrompt = `
+      Based on this conversation exchange, extract the user's name if they shared it.
+      Only return the name, nothing else. If no name is found, return "NULL".
+      
+      User message: "${userMessage}"
+      AI response: "${aiResponse}"
+      `;
+      
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(extractPrompt);
+      const extractedText = result.response.text().trim();
+      
+      return extractedText === "NULL" ? null : extractedText;
+    } catch (error) {
+      console.error('Error extracting user name:', error);
+      return null;
     }
   }
 

@@ -54,3 +54,59 @@ export const generateTherapyResponse = async (prompt, type) => {
   const systemPrompt = contextMap[type] || '';
   return generateChatResponse(prompt, [], systemPrompt);
 };
+
+// export const analyzeMood = async (message) => {
+//   try {
+//     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+//     const analyzePrompt = `
+//     Analyze the emotional tone/mood of this message and categorize it as one of:
+//     - positive
+//     - neutral
+//     - negative
+//     - anxious
+//     - hopeful
+//     - confused
+//     - frustrated
+    
+//     Return only the single word category, nothing else.
+    
+//     Message: "${message}"
+//     `;
+    
+//     const result = await model.generateContent(analyzePrompt);
+//     return result.response.text().trim().toLowerCase();
+//   } catch (error) {
+//     console.error('Error analyzing mood:', error);
+//     return 'neutral'; // Default fallback
+//   }
+// };
+
+// export const analyzeTopic = async (message) => {
+//   try {
+//     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+//     const analyzePrompt = `
+//     Analyze this message and categorize the main topic as one of:
+//     - relationships
+//     - work
+//     - health
+//     - personal_growth
+//     - anxiety
+//     - depression
+//     - family
+//     - finances
+//     - other
+    
+//     Return only the single word category, nothing else.
+    
+//     Message: "${message}"
+//     `;
+    
+//     const result = await model.generateContent(analyzePrompt);
+//     return result.response.text().trim().toLowerCase();
+//   } catch (error) {
+//     console.error('Error analyzing topic:', error);
+//     return 'other'; // Default fallback
+//   }
+// };
