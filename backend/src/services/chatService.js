@@ -105,14 +105,15 @@ export class ChatService {
           user_id: userId,
           chat_context: []
         };
+      }
         
         // If user has no profile, this is the first interaction ever
-        if (!userProfile || !userProfile.name) {
-          isFirstInteraction = true;
-          customPrompt = INTRO_PROMPT;
-          console.log('First interaction detected, using introduction prompt');
-        }
+      if (!userProfile || !userProfile.name) {
+        isFirstInteraction = true;
+        customPrompt = INTRO_PROMPT;
+        console.log('First interaction detected, using introduction prompt');
       }
+      
       
       // Check if we're in the onboarding phase (user has started but not completed profile)
       if (userProfile && userProfile.name && !userProfile.onboardingComplete) {
@@ -131,7 +132,7 @@ export class ChatService {
           customPrompt = WELCOME_BACK_PROMPT.replace('{userName}', userName);
           console.log(`Welcome back trigger for returning user ${userName}`);
         } else {
-          customPrompt = PERSONAL_CONVO_PROMPT.replace('{userName}', userName);
+          customPrompt = BASE_THERAPIST_PROMPT;
           console.log(`Personalized conversation for returning user ${userName}`);
         }
       }
