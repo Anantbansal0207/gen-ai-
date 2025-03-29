@@ -10,7 +10,7 @@ router.post('/chat', authenticate, async (req, res) => {
     const { sessionId, message } = req.body;
     const userId = req.user.id;
 
-    if (!sessionId || !message) {
+    if (!sessionId || message === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

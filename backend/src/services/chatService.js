@@ -1,8 +1,15 @@
 import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
-import { config } from '../config/index.js';
+
 import axios from 'axios';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { config, initializeConfig } from '../config/index.js';
+
+// Ensure the configuration is loaded before using it
+await initializeConfig();
+
+const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
 // --- Base Therapist Prompt (Defined once for consistency) ---
 const BASE_THERAPIST_PROMPT = `

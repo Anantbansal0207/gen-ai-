@@ -40,7 +40,7 @@ export class MemoryService {
   static async getUserProfile(userId) {
     try {
       const profileKey = `user:${userId}:profile`;
-      const profileData = redis.get(profileKey);
+      const profileData = await redis.get(profileKey);
       
       if (!profileData) {
         return null;
