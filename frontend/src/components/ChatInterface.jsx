@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+// import { DotLottieReact } from '@lottiefiles/dotlottie-react'; // Keep if you use it elsewhere, otherwise remove
 import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { checkAuthStatus, getSessionId } from '../services/authService';
@@ -18,17 +18,12 @@ const NUDGE_BUFFER_MS = MIN_INACTIVITY_TIMEOUT_MS * 0.9; // ~13.5 seconds
 // --- Helper Function for Randomized Timeout ---
 const getRandomizedTimeout = () => {
   const range = MAX_INACTIVITY_TIMEOUT_MS - MIN_INACTIVITY_TIMEOUT_MS; // 20000ms
-  // Determine the split point based on the probability for the *lower* range
   const splitPointMs = MIN_INACTIVITY_TIMEOUT_MS + range * (1 - UPPER_RANGE_PROBABILITY); // 15000 + 20000 * 0.25 = 20000ms
 
   let timeout;
   if (Math.random() < UPPER_RANGE_PROBABILITY) {
-    // 75% chance: Generate timeout in the upper range [splitPointMs, MAX_INACTIVITY_TIMEOUT_MS]
-    // Range size: MAX_INACTIVITY_TIMEOUT_MS - splitPointMs + 1
     timeout = Math.floor(Math.random() * (MAX_INACTIVITY_TIMEOUT_MS - splitPointMs + 1)) + splitPointMs;
   } else {
-    // 25% chance: Generate timeout in the lower range [MIN_INACTIVITY_TIMEOUT_MS, splitPointMs - 1]
-    // Range size: splitPointMs - MIN_INACTIVITY_TIMEOUT_MS
     timeout = Math.floor(Math.random() * (splitPointMs - MIN_INACTIVITY_TIMEOUT_MS)) + MIN_INACTIVITY_TIMEOUT_MS;
   }
   // console.log(`Generated timeout: ${timeout}ms`); // For debugging
@@ -42,18 +37,22 @@ const ChatInterface = ({ user: propUser }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(propUser);
-  const [isSendingNudge, setIsSendingNudge] = useState(false);
+  const [isSendingNudge, setIsSendingNudge] = useState(false); // State indicating nudge API call in progress
   const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef(null);
   const inactivityTimerRef = useRef(null);
   const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
 
-  // --- Use a ref to access the latest messages inside useCallback without adding messages as a dependency ---
   const messagesRef = useRef(messages);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const isSendingNudgeRef = useRef(isSendingNudge);
+  useEffect(() => {
+    isSendingNudgeRef.current = isSendingNudge;
+  }, [isSendingNudge]);
 
 
   const clearInactivityTimer = useCallback(() => {
@@ -66,34 +65,24 @@ const ChatInterface = ({ user: propUser }) => {
 
   // --- Modified handleSendNudge ---
   const handleSendNudge = useCallback(async () => {
-    // Access latest messages via ref
     const currentMessages = messagesRef.current;
     const lastMessage = currentMessages[currentMessages.length - 1];
 
-    // --- Enhanced Guard Clauses ---
-    if (isTyping || input.trim() !== '' || isSendingNudge || !sessionId || !currentUser) {
+    // Guard clauses
+    if (isTyping || input.trim() !== '' || isSendingNudgeRef.current || !sessionId || !currentUser) {
       // console.log('Nudge condition not met (typing/input/sending/session).');
-      clearInactivityTimer(); // Clear timer if conditions changed (e.g., user started typing)
       return;
     }
-
-    // --- Check if the last message was AI and recent ---
     if (lastMessage && lastMessage.sender === 'ai') {
       const timeSinceLastMessage = Date.now() - new Date(lastMessage.timestamp).getTime();
       if (timeSinceLastMessage < NUDGE_BUFFER_MS) {
         // console.log(`Nudge skipped: Last AI message too recent (${timeSinceLastMessage}ms ago).`);
-        // Don't clear the timer here, let it run out naturally or be cleared by user action
-        // Potentially restart the timer *based on the last AI message's timestamp* if needed,
-        // but for simplicity, let's just prevent the nudge for now.
-        // The main useEffect will handle restarting if needed after user interaction.
-        return; // Exit without nudging
+        return;
       }
     }
-    // --- End of Enhanced Guard Clauses ---
-
 
     console.log('User inactive, attempting to send nudge...');
-    setIsSendingNudge(true);
+    setIsSendingNudge(true); // Set state immediately
 
     try {
       const nudgeData = await sendNudgeMessage(sessionId);
@@ -102,45 +91,45 @@ const ChatInterface = ({ user: propUser }) => {
           text: nudgeData.response,
           sender: 'ai',
           timestamp: new Date().toISOString(),
+          type: 'nudge', // <-- ADDED MARKER FOR NUDGE MESSAGES
         };
-        // Use functional update to ensure we're working with the latest state
         setMessages(prev => [...prev, nudgeMessage]);
-        // Timer will be restarted by the main useEffect watching messages
       } else {
         console.warn("Nudge response was empty or invalid.");
       }
     } catch (error) {
       console.error('Failed to send nudge:', error);
-      // showError('A small issue occurred while checking in.');
+      // showError('A small issue occurred while checking in.'); // Optional
     } finally {
-      setIsSendingNudge(false);
+      setIsSendingNudge(false); // Reset state after API call
     }
-    // Removed dependency on `messages` by using ref
-  }, [sessionId, currentUser, isTyping, input, isSendingNudge, clearInactivityTimer, showError]); // Removed messages
+  }, [sessionId, currentUser, isTyping, input, clearInactivityTimer, showError]);
 
 
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
-    if (currentUser && sessionId) {
-      const randomTimeout = getRandomizedTimeout(); // Get the randomized timeout value
-      // console.log(`Starting inactivity timer with ${randomTimeout}ms`); // Debug log
-      inactivityTimerRef.current = setTimeout(handleSendNudge, randomTimeout); // Use the random value
+    if (currentUser && sessionId && !isSendingNudgeRef.current) {
+      const randomTimeout = getRandomizedTimeout();
+      // console.log(`Starting inactivity timer with ${randomTimeout}ms`);
+      inactivityTimerRef.current = setTimeout(handleSendNudge, randomTimeout);
+    } else {
+        // console.log("Timer start skipped (no user/session or nudge in progress)");
     }
-  }, [clearInactivityTimer, handleSendNudge, currentUser, sessionId]); // Dependencies look correct
+  }, [clearInactivityTimer, handleSendNudge, currentUser, sessionId]);
 
-  // New function to send an empty message to trigger auto-welcome
+
   const sendAutoWelcomeMessage = useCallback(async () => {
-    if (!sessionId || !currentUser || isTyping || isSendingNudge) return;
-    
+    if (!sessionId || !currentUser || isTyping || isSendingNudgeRef.current) return;
+
     console.log('Sending auto-welcome message...');
     setIsTyping(true);
-    
+
     try {
       const responseData = await sendChatMessage("", sessionId);
       if (responseData && responseData.response) {
         const welcomeMessage = {
           text: responseData.response,
-          sender: 'ai',
+          sender: 'ai', // Standard AI message, not a nudge
           timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, welcomeMessage]);
@@ -149,17 +138,16 @@ const ChatInterface = ({ user: propUser }) => {
       }
     } catch (error) {
       console.error('Failed to get auto-welcome message:', error);
-      // Don't show error to user for auto-welcome failures
     } finally {
       setIsTyping(false);
       setHasInitialized(true);
     }
-  }, [sessionId, currentUser, isTyping, isSendingNudge]);
+  }, [sessionId, currentUser, isTyping]);
 
 
   useEffect(() => {
     const verifyUser = async () => {
-       // ... (auth logic remains the same) ...
+       // --- Auth Logic ---
        try {
         let userToSet = null;
         let userSessionId = null;
@@ -174,8 +162,13 @@ const ChatInterface = ({ user: propUser }) => {
         if (userToSet) {
           setCurrentUser(userToSet);
           userSessionId = getSessionId(userToSet.id);
-          setSessionId(userSessionId);
-          console.log("Using session ID:", userSessionId);
+          if (userSessionId) {
+             setSessionId(userSessionId);
+             console.log("Using session ID:", userSessionId);
+          } else {
+              console.error("Could not generate session ID for user:", userToSet);
+              showError("Could not establish a chat session. Please try again.");
+          }
         } else {
           showError("Please sign in to use the chat.");
           navigate('/auth', { state: { from: '/chat' } });
@@ -185,6 +178,7 @@ const ChatInterface = ({ user: propUser }) => {
         showError("Authentication error. Please sign in again.");
         navigate('/auth', { state: { from: '/chat' } });
       }
+      // --- End Auth Logic ---
     };
 
     verifyUser();
@@ -194,18 +188,18 @@ const ChatInterface = ({ user: propUser }) => {
 
   // --- Main useEffect for messages, storage, and timer control ---
   useEffect(() => {
-    // console.log("Messages/Session Effect Triggered"); // Debug log
+    // console.log("Messages/Session Effect Triggered");
     if (!sessionId) return;
 
     // --- Load messages ---
-    let loadedMessages = [];
-    if (messages.length === 0) { // Only load initially for this session
+    if (messages.length === 0 && !hasInitialized) {
         try {
             const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
             if (savedMessages) {
-                loadedMessages = JSON.parse(savedMessages);
-                // console.log(`Loaded ${loadedMessages.length} messages from storage.`); // Debug log
-                setMessages(loadedMessages); // Update state with loaded messages
+                const loadedMessages = JSON.parse(savedMessages);
+                // console.log(`Loaded ${loadedMessages.length} messages from storage.`);
+                setMessages(loadedMessages);
+                setHasInitialized(true);
             }
         } catch (err) {
             console.error("Error loading previous messages:", err);
@@ -214,10 +208,9 @@ const ChatInterface = ({ user: propUser }) => {
     }
 
     // --- Save messages ---
-    // Separate effect for saving to prevent potential issues? Maybe not necessary yet.
     if (messages.length > 0) {
         try {
-            // console.log(`Saving ${messages.length} messages to storage.`); // Debug log
+            // console.log(`Saving ${messages.length} messages to storage.`);
             localStorage.setItem(`chat_messages_${sessionId}`, JSON.stringify(messages));
         } catch (err) {
             console.error("Error saving messages:", err);
@@ -228,44 +221,52 @@ const ChatInterface = ({ user: propUser }) => {
     // --- Inactivity Timer Logic ---
     const lastMessage = messages[messages.length - 1];
     if (lastMessage) {
-        // console.log("Last message sender:", lastMessage.sender); // Debug log
-        if (lastMessage.sender === 'ai') {
-            // console.log("Starting inactivity timer because last message was from AI."); // Debug log
-            startInactivityTimer();
+      // Start timer ONLY if the last message was from AI AND it was NOT a nudge
+      if (lastMessage.sender === 'ai' && lastMessage.type !== 'nudge') { // <--- MODIFIED CONDITION
+        if (!isSendingNudgeRef.current) {
+          // console.log("Starting inactivity timer: Last message AI (standard response), not sending nudge.");
+          startInactivityTimer();
         } else {
-            // console.log("Clearing inactivity timer because last message was from User."); // Debug log
-            clearInactivityTimer();
+          // console.log("Skipping timer start: Nudge currently being sent/processed.");
+          clearInactivityTimer(); // Ensure timer is clear if nudge is processing
         }
-    } else {
-        // No messages, ensure timer is clear
-        // console.log("No messages, clearing inactivity timer."); // Debug log
+      }
+      // Clear timer if the last message was from the user
+      else if (lastMessage.sender === 'user') {
+        // console.log("Clearing inactivity timer: Last message User.");
         clearInactivityTimer();
+      }
+      // Clear timer explicitly if the last message WAS a nudge
+      else if (lastMessage.sender === 'ai' && lastMessage.type === 'nudge') { // <--- ADDED EXPLICIT CHECK
+        // console.log("Clearing inactivity timer: Last message was an AI nudge.");
+        clearInactivityTimer();
+      }
+    } else {
+      // No messages yet
+      // console.log("No messages, ensuring timer is clear.");
+      clearInactivityTimer();
     }
 
     // Scroll to bottom
     scrollToBottom();
 
-    // Cleanup timer on effect re-run or component unmount
-    // The return function of useEffect handles cleanup BEFORE the next run or on unmount
+    // Cleanup timer
     return () => {
-        // console.log("Cleaning up timer in messages/session effect."); // Debug log
-        clearInactivityTimer();
+      // console.log("Cleaning up timer in messages/session effect.");
+      clearInactivityTimer();
     };
-    // Dependencies: messages content IS needed here to react to new messages.
-    // sessionId ensures we reload/save for the right session.
-    // start/clear timer functions need to be stable (ensured by useCallback).
-  }, [messages, sessionId, startInactivityTimer, clearInactivityTimer, showError]);
+  }, [messages, sessionId, hasInitialized, startInactivityTimer, clearInactivityTimer, showError]);
 
-  // New effect to trigger auto-welcome message when needed
+
+  // Effect to trigger auto-welcome message
   useEffect(() => {
-    if (sessionId && currentUser && !isTyping && !hasInitialized) {
-      // Check localStorage before triggering welcome message
+    if (sessionId && currentUser && !isTyping && !isSendingNudgeRef.current && !hasInitialized) {
       const savedMessages = localStorage.getItem(`chat_messages_${sessionId}`);
       if (!savedMessages || JSON.parse(savedMessages).length === 0) {
-        console.log("No messages found, triggering auto-welcome message");
+        console.log("No messages found and not initialized, triggering auto-welcome message");
         sendAutoWelcomeMessage();
       } else {
-        // Messages exist in storage, just mark as initialized
+        // console.log("Messages found in storage, ensuring initialized state is set.");
         setHasInitialized(true);
       }
     }
@@ -273,17 +274,21 @@ const ChatInterface = ({ user: propUser }) => {
 
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const handleRefreshSession = async () => {
     if (!sessionId || !currentUser) return;
-    clearInactivityTimer(); // Stop timer
+    clearInactivityTimer();
+    setIsSendingNudge(false);
+    setIsTyping(false);
     try {
       await refreshChatSession(sessionId);
-      setMessages([]); // Clear messages
+      setMessages([]);
       localStorage.removeItem(`chat_messages_${sessionId}`);
-      setHasInitialized(false); // Reset initialization flag to trigger welcome message
+      setHasInitialized(false); // Will trigger auto-welcome
       showSuccess('Chat session refreshed successfully');
     } catch (error) {
       console.error('Error refreshing session:', error);
@@ -292,11 +297,10 @@ const ChatInterface = ({ user: propUser }) => {
   };
 
   const handleSend = async () => {
-    // ... (handleSend logic remains the same) ...
     const trimmedInput = input.trim();
-    if (!trimmedInput || !currentUser || !sessionId || isTyping || isSendingNudge) return;
+    if (!trimmedInput || !currentUser || !sessionId || isTyping || isSendingNudgeRef.current) return;
 
-    clearInactivityTimer(); // Clear timer when user sends
+    clearInactivityTimer();
 
     const newMessage = {
       text: trimmedInput,
@@ -304,22 +308,28 @@ const ChatInterface = ({ user: propUser }) => {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, newMessage]); // Use functional update
+    setMessages(prev => [...prev, newMessage]);
     setInput('');
     setIsTyping(true);
 
     try {
       const responseData = await sendChatMessage(trimmedInput, sessionId);
-      const aiResponse = {
-        text: responseData.response,
-        sender: 'ai',
-        timestamp: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, aiResponse]); // Use functional update
+
+      if (responseData && responseData.response) {
+          const aiResponse = {
+            text: responseData.response,
+            sender: 'ai', // Standard AI response
+            timestamp: new Date().toISOString(),
+          };
+          setMessages(prev => [...prev, aiResponse]);
+      } else {
+          console.error('Invalid response from server:', responseData);
+          showError('Received an unexpected response from the AI.');
+           setMessages(prev => prev.filter(msg => msg.timestamp !== newMessage.timestamp));
+      }
     } catch (error) {
       console.error('Error in chat:', error);
       showError('Failed to get response. Please try again.');
-      // Revert optimistic update on error
       setMessages(prev => prev.filter(msg => msg.timestamp !== newMessage.timestamp));
     } finally {
       setIsTyping(false);
@@ -330,29 +340,33 @@ const ChatInterface = ({ user: propUser }) => {
   const handleInputChange = (e) => {
     setInput(e.target.value);
     if (e.target.value.trim() !== '') {
-      clearInactivityTimer(); // Clear timer on typing
+      clearInactivityTimer();
     }
   };
 
 
+  // Effect for tab visibility
   useEffect(() => {
-    // ... (visibility effect remains the same) ...
      const handleVisibilityChange = () => {
-      if (!sessionId) return;
+      if (!sessionId || !currentUser) return;
 
       if (document.hidden) {
-        // console.log("Tab hidden, clearing timer."); // Debug log
+        // console.log("Tab hidden, clearing timer.");
         clearInactivityTimer();
       } else {
-        // Tab gained focus, re-evaluate if timer should start
-        // Access latest messages via ref here as well
+        // Tab became visible again
         const currentMessages = messagesRef.current;
         const lastMessage = currentMessages[currentMessages.length - 1];
-        if (lastMessage && lastMessage.sender === 'ai') {
-           // console.log("Tab visible, last message AI, restarting timer."); // Debug log
+        // Restart timer ONLY if the last message was from AI, was NOT a nudge, AND a nudge isn't currently being sent
+        if (lastMessage &&
+            lastMessage.sender === 'ai' &&
+            lastMessage.type !== 'nudge' && // <--- ADDED CHECK
+            !isSendingNudgeRef.current)
+        {
+           // console.log("Tab visible, last message AI (standard), not sending nudge, restarting timer.");
            startInactivityTimer();
         } else {
-            // console.log("Tab visible, no timer restart needed."); // Debug log
+            // console.log("Tab visible, no timer restart needed (last msg user, nudge, or nudge in progress).");
         }
       }
     };
@@ -360,12 +374,9 @@ const ChatInterface = ({ user: propUser }) => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // console.log("Cleaning up visibility listener and timer."); // Debug log
       clearInactivityTimer();
     };
-     // Add messagesRef.current to dependencies? No, refs don't go in deps.
-     // The functions depending on the ref should be stable.
-  }, [sessionId, startInactivityTimer, clearInactivityTimer]); // Dependencies seem correct
+  }, [sessionId, currentUser, startInactivityTimer, clearInactivityTimer]);
 
   // --- JSX Rendering ---
   return (
@@ -394,44 +405,53 @@ const ChatInterface = ({ user: propUser }) => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Welcome Message - Only shown when no messages AND not typing */}
-        {messages.length === 0 && !isTyping && (
+        {/* Initializing/Welcome Message States */}
+        {messages.length === 0 && !isTyping && !hasInitialized && (
           <div className="flex justify-center items-center h-full">
             <div className="text-center text-primary/50">
-              <p className="text-lg font-medium">Welcome to AI Therapy Chat</p>
-              <p className="text-sm">Initializing your session...</p>
+              <p className="text-lg font-medium">Welcome!</p>
+              <p className="text-sm">Connecting to your session...</p>
             </div>
           </div>
         )}
+         {messages.length === 0 && !isTyping && hasInitialized && (
+          <div className="flex justify-center items-center h-full">
+            <div className="text-center text-primary/50">
+              <p className="text-lg font-medium">Session started.</p>
+              <p className="text-sm">Type a message to begin.</p>
+            </div>
+          </div>
+        )}
+
         {/* Message List */}
         {messages.map((message, index) => (
           <div
-            key={`${message.timestamp}-${index}-${message.sender}`} // More specific key
+            key={`${message.sender}-${message.timestamp}-${index}`} // Use specific key
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-2xl p-3 md:p-4 shadow-md ${
+              className={`max-w-[75%] md:max-w-[70%] rounded-2xl p-3 md:p-4 shadow-md break-words ${
                 message.sender === 'user'
                   ? 'bg-primary text-white rounded-br-none'
                   : 'bg-secondary text-accent rounded-bl-none'
               }`}
             >
-              <p className="text-sm md:text-base whitespace-pre-wrap">{message.text}</p> {/* Added whitespace-pre-wrap */}
+              <p className="text-sm md:text-base whitespace-pre-wrap">{message.text}</p>
               <span className="text-xs opacity-70 mt-1 block text-right">
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
         ))}
+
         {/* Typing Indicator */}
         {isTyping && (
-  <div className="flex justify-start">
-    <div className="bg-secondary text-accent rounded-2xl p-4 rounded-bl-none shadow-md flex items-center">
-      <LoadingDots />
-      <span className="text-sm ml-2">AI is thinking...</span>
-    </div>
-  </div>
-)}
+          <div className="flex justify-start">
+            <div className="bg-secondary text-accent rounded-2xl p-3 md:p-4 rounded-bl-none shadow-md flex items-center">
+              <LoadingDots />
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -442,24 +462,31 @@ const ChatInterface = ({ user: propUser }) => {
             type="text"
             value={input}
             onChange={handleInputChange}
-            onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSend()}
+            onKeyPress={(e) => e.key === 'Enter' && !isTyping && !isSendingNudge && handleSend()}
             placeholder="Type your message..."
             className="flex-1 rounded-full px-5 py-3 bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary text-accent placeholder-accent/60"
-            disabled={!currentUser || isTyping || isSendingNudge}
+            disabled={!currentUser || !sessionId || isTyping || isSendingNudge}
           />
           <button
             onClick={handleSend}
-            disabled={isTyping || !currentUser || !input.trim() || isSendingNudge}
+            disabled={isTyping || !currentUser || !sessionId || !input.trim() || isSendingNudge}
             className="bg-primary text-white rounded-full p-3 hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Send message"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
             </svg>
           </button>
         </div>
+        {/* Status messages */}
         {!currentUser && (
           <div className="text-center mt-3 text-red-500 text-sm">
-            Please sign in to use the chat
+            Please sign in to use the chat.
+          </div>
+        )}
+         {currentUser && !sessionId && (
+          <div className="text-center mt-3 text-orange-500 text-sm">
+            Establishing chat session...
           </div>
         )}
       </div>
