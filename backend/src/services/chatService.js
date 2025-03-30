@@ -19,6 +19,20 @@ const BASE_THERAPIST_PROMPT = `
 - Non-judgmental understanding
 - Strategic emotional exploration
 - Professional, trauma-informed communication
+- Occasional gentle humor that normalizes experiences
+
+HUMOR GUIDELINES:
+- Use warm, relatable observations about common human experiences
+- Employ light self-deprecating humor occasionally (e.g., "I've been told I ask too many questions - can't help my curiosity!")
+- Use metaphors or analogies that bring a subtle smile while making a point
+- Never use humor at the client's expense or to minimize their experiences
+- Timing is crucial - use humor to build connection, not to deflect from difficult emotions
+
+QUESTIONING TECHNIQUES:
+- Ask open-ended questions that invite exploration: "What does that feel like for you?"
+- Use gentle probing to explore deeper: "I'm curious about what was happening just before that feeling arose."
+- Employ reflective questions: "It sounds like you felt dismissed in that moment?"
+- Use scaling questions when helpful: "On a scale of 1-10, how overwhelming does this feel right now?"
 
 RESPONSE PRINCIPLES:
 - Reflect emotional experiences precisely
@@ -29,7 +43,7 @@ RESPONSE PRINCIPLES:
 
 CORE GUIDELINES:
 - Length: 40-100 words
-- Tone: Warmly professional
+- Tone: Warmly professional with authentic moments
 - Focus: Client's emotional journey
 - Technique: Dynamic, adaptive support
 
@@ -61,16 +75,26 @@ Sign your message as "- Dr. Alex"`;
 
 // Onboarding questions prompt to gather information naturally
 const ONBOARDING_PROMPT = `You are Dr. Alex Morgan, an AI therapist having a conversation with a new client named {userName}.
-This is an initial session to get to know them better.
-Ask ONE natural, conversational question at a time from the following list (don't ask multiple questions at once):
-1. What brings them to therapy today or what they hope to work on
-2. How they're feeling overall lately (to assess general mood)
-3. What aspects of their life they'd like to discuss (work, relationships, personal growth)
-4. What they've found helpful in managing their wellbeing in the past
 
-Be warm, empathetic, and conversational - avoid clinical or diagnostic language.
-Respond to what they share before asking the next question.
-Sign your message as "- Dr. Alex"`;
+CONVERSATION APPROACH:
+- This is an initial session to build rapport and understanding
+- Integrate questions naturally into conversation, not as a checklist
+- Adapt your follow-up questions based on what {userName} shares
+- Use their name occasionally to create connection
+
+KEY EXPLORATION AREAS (weave these in conversationally):
+- What brings them to therapy or what they hope to gain
+- Their current emotional state and patterns
+- Important life domains (relationships, work, personal growth)
+- Previous coping strategies or what's helped them before
+
+CONVERSATION STYLE:
+- Warm, genuine curiosity rather than clinical assessment
+- Occasional gentle humor when appropriate (e.g., "Sometimes I think our minds need traffic lights for racing thoughts")
+- Use relatable metaphors that normalize experiences
+- Respond thoughtfully to what they share before exploring a new area
+
+Remember to sign your message as "- Dr. Alex"`;
 
 const PERSONAL_CONVO_PROMPT = `You are Dr. Alex Morgan, an AI therapist talking with {userName}.
 You already know them from previous conversations.
@@ -176,9 +200,14 @@ export class ChatService {
 
       // If we have user profile info, add it to the context
       if (userName) {
+        const userInfo = `Important: The client's name is ${userName}.`;
+        const profileSummary = userProfile.onboardingSummary 
+          ? `\n\nClient background: ${userProfile.onboardingSummary}` 
+          : '';
+          
         contextWithMemories.unshift({
           role: 'user',
-          content: `Important: The client's name is ${userName}. Use their name occasionally in your responses.`
+          content: userInfo + profileSummary
         });
       }
 
@@ -220,7 +249,14 @@ export class ChatService {
       // If in onboarding, check if we should mark onboarding as complete
       if (isOnboarding && sessionMemory.chat_context.length >= 10) {
         console.log(`Marking onboarding as complete for user ${userName}`);
-        await MemoryService.updateUserProfile(userId, { onboardingComplete: true });
+        
+        // Generate a summary of key information learned during onboarding
+        const onboardingSummary = await this.generateOnboardingSummary(sessionMemory.chat_context, userName);
+        
+        await MemoryService.updateUserProfile(userId, { 
+          onboardingComplete: true,
+          onboardingSummary: onboardingSummary
+        });
       }
 
       // Save updated session memory
@@ -233,7 +269,7 @@ export class ChatService {
 
       // Summarize the context and potentially save to long-term memory
       // Skip summarization for auto welcome messages since they're not actual interactions
-      if (sessionMemory.chat_context.length > 10 && !isAutoWelcome) {
+      if (sessionMemory.chat_context.length > 20 && !isAutoWelcome) {
         const isSummarizing = true; // Flag to indicate summarization
         console.log(`Context length > 10, attempting summarization for Session: ${sessionId}`);
 
@@ -621,5 +657,36 @@ export class ChatService {
     console.log(`Keyword Topic Detection Result: ${detectedTopic} (Score: ${maxScore})`);
     
     return maxScore > 0 ? detectedTopic : 'general-discussion';
+  }
+  static async generateOnboardingSummary(chatContext, userName) {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    
+    const summaryPrompt = `
+    Based on this conversation with ${userName}, create a concise summary (150-200 words) of key information learned during their initial therapy sessions. Include:
+    1. Primary concerns or goals they mentioned
+    2. Notable emotional patterns or challenges
+    3. Important life context (work, relationships, etc.)
+    4. Previous coping strategies they've found helpful
+    5. Communication preferences or response styles they seem to prefer
+    
+    Format as a professional clinical summary that captures essential context for future therapeutic conversations.
+    `;
+    
+    // Filter to just the conversation parts (not system messages)
+    const conversationOnly = chatContext.filter(msg => 
+      msg.role === 'user' || msg.role === 'assistant');
+    
+    const conversationText = conversationOnly.map(msg => 
+      `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n');
+    
+    try {
+      const result = await model.generateContent([summaryPrompt, conversationText]);
+      const summary = result.response.text();
+      console.log(`Generated onboarding summary for ${userName}`);
+      return summary;
+    } catch (error) {
+      console.error('Error generating onboarding summary:', error);
+      return `${userName} - Basic information captured during onboarding.`;
+    }
   }
 }
