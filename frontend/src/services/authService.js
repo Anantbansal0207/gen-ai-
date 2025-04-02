@@ -1,6 +1,6 @@
 // Get the API base URL dynamically
 import { supabase } from "../utils/supabase1";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 
 // export const getCurrentUser = async () => {
@@ -28,7 +28,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 
 export const initiateSignUp = async (email, password) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/signup/initiate`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signup/initiate`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -51,7 +51,7 @@ export const initiateSignUp = async (email, password) => {
 
 export const completeSignUp = async (email, otp) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/signup/complete`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signup/complete`, {
       method: 'POST',
       credentials: 'include',
       headers: {
