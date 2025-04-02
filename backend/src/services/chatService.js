@@ -76,7 +76,7 @@ const BASE_THERAPIST_PROMPT = `
   - Actively incorporate the client's specific context details in responses
 
   CORE GUIDELINES:
-  - Length: 40-50 words
+  - Length: 10-50 words
   - Tone: Warmly professional with authentic moments
   - Focus: Client's emotional journey
   - Technique: Dynamic, adaptive support
@@ -707,7 +707,7 @@ ${userProfile.onboardingSummary}
     return maxScore > 0 ? detectedTopic : 'general-discussion';
   }
   static async generateOnboardingSummary(chatContext, userName) {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
     const summaryPrompt = `
     Based on this conversation with ${userName}, create a concise summary (150-200 words) of key information learned during their initial therapy sessions. 
