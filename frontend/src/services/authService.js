@@ -91,7 +91,7 @@ export const completeSignUp = async (email, otp) => {
 
 export const signIn = async (email, password) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
       method: 'POST',
       credentials: 'include',
       headers: {
