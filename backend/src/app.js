@@ -37,7 +37,7 @@ app.set('trust proxy', 1);
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? ['https://www.xryptt.com', 'https://xryptt.com', 'https://xrypttsaas-1.onrender.com', 'https://xrypttsaas.onrender.com']
-    : ['http://localhost:5173','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--33edf5bb.local-credentialless.webcontainer-api.io'],
+    : ['http://localhost:5173','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--33edf5bb.local-credentialless.webcontainer-api.io','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3-ujzq9jau--5173--33edf5bb.local-credentialless.webcontainer-api.io/'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
