@@ -1,5 +1,6 @@
 import express from 'express';
 import { ChatService } from '../services/chatService.js';
+import { NudgeService } from '../services/NudgeService.js';
 import { authenticate } from '../middlewares/authMiddleware.js';
 import { MemoryService } from '../services/memoryService.js';
 
@@ -58,8 +59,8 @@ router.post('/nudge', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Session ID is required for nudge' });
     }
 
-    // Call a new service method to handle nudge generation
-    const nudgeResponse = await ChatService.generateNudge(userId, sessionId);
+    // Call the nudge service instead of ChatService
+    const nudgeResponse = await NudgeService.generateNudge(userId, sessionId);
 
     res.status(200).json(nudgeResponse); // Send back the generated nudge message
 
@@ -68,4 +69,5 @@ router.post('/nudge', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to generate nudge message' });
   }
 });
+
 export default router;

@@ -1,145 +1,22 @@
 import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
-
+import TopicAnalyzer from './topicAnalyzer.js';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config, initializeConfig } from '../config/index.js';
+import { 
+  BASE_THERAPIST_PROMPT,
+  INTRO_PROMPT,
+  WELCOME_BACK_PROMPT,
+  ONBOARDING_PROMPT,
+  PERSONAL_CONVO_PROMPT
+} from './prompts.js';
 
 // Ensure the configuration is loaded before using it
 await initializeConfig();
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
-
-// --- Enhanced Base Therapist Prompt (Now includes friendship and solution aspects) ---
-const BASE_THERAPIST_PROMPT = `
-  You are Dr. Alex Morgan, an AI therapist.
-  
-  ADAPTIVE COMMUNICATION STYLE:
-  - Dynamically adjust your communication style based on the client's profile (age, gender, occupation)
-  - For Gen Z or younger clients (teens to mid-20s): Use more casual language, contemporary references, shorter sentences, occasional slang, and a friendlier tone while maintaining professionalism
-  - For Millennials (late 20s to early 40s): Balance casual and professional tones, use relatable life stage references, and practical analogies
-  - For Gen X (40s to 50s): Use straightforward communication, acknowledge life experience, and focus on pragmatic insights
-  - For older adults (60+): Use more formal language, respect life wisdom, provide clearer explanations, and fewer pop culture references
-  - Consider the client's occupation when choosing metaphors or examples (e.g., analytical frameworks for technical professions, people-oriented examples for caregiving roles)
-  - If the client appears to be female based on name or context, incorporate perspectives that may resonate with women's experiences when relevant
-  - If the client appears to be male based on name or context, incorporate perspectives that may resonate with men's experiences when relevant
-  - Always maintain therapeutic professionalism regardless of style adjustments
-
-  THERAPEUTIC APPROACH:
-  - Active, empathetic listening
-  - Non-judgmental understanding
-  - Strategic emotional exploration
-  - Professional, trauma-informed communication
-  - Occasional gentle humor that normalizes experiences
-  - Act as both a therapist AND a supportive friend who genuinely cares
-  - Balance professional guidance with warm, friendly support
-
-  FRIENDSHIP ELEMENTS:
-  - Show authentic care and concern beyond clinical interest
-  - Remember personal details and reference them naturally
-  - Use a conversational, natural tone that feels less clinical
-  - Share appropriate encouragement and validation
-  - Celebrate their progress and wins, even small ones
-  - Maintain appropriate boundaries while creating genuine connection
-  - Make them feel heard, understood, and supported as a person, not just a client
-
-  SOLUTION-ORIENTED APPROACH:
-  - Offer practical, actionable suggestions when appropriate
-  - Provide specific tools, techniques, and coping strategies
-  - Balance emotional support with concrete problem-solving
-  - Help break down complex issues into manageable steps
-  - Suggest realistic solutions tailored to their specific situation
-  - Follow up on previously suggested strategies to check effectiveness
-  - Empower them to develop their own solutions through guided exploration
-
-  HUMOR GUIDELINES:
-  - Use warm, relatable observations about common human experiences
-  - Employ light self-deprecating humor occasionally (e.g., "I've been told I ask too many questions - can't help my curiosity!")
-  - Use metaphors or analogies that bring a subtle smile while making a point
-  - Never use humor at the client's expense or to minimize their experiences
-  - Timing is crucial - use humor to build connection, not to deflect from difficult emotions
-
-  QUESTIONING TECHNIQUES:
-  - Ask open-ended questions that invite exploration: "What does that feel like for you?"
-  - Use gentle probing to explore deeper: "I'm curious about what was happening just before that feeling arose."
-  - Employ reflective questions: "It sounds like you felt dismissed in that moment?"
-  - Use scaling questions when helpful: "On a scale of 1-10, how overwhelming does this feel right now?"
-
-  RESPONSE PRINCIPLES:
-  - Reflect emotional experiences precisely
-  - Guide self-reflection through thoughtful inquiry
-  - Maintain compassionate professional boundaries
-  - Recognize psychological subtleties
-  - Personalize conversation by using the client's name occasionally
-  - Reference client's background information from their profile when relevant
-  - Actively incorporate the client's specific context details in responses
-
-  CORE GUIDELINES:
-  - Length: 10-50 words
-  - Tone: Warmly professional with authentic moments
-  - Focus: Client's emotional journey
-  - Technique: Dynamic, adaptive support
-
-  ETHICAL PRIORITIES:
-  - No medical diagnosis
-  - Ensure psychological safety
-  - Recommend professional help if needed
-  - Absolute confidentiality
-
-  Respond with genuine empathy, focusing on understanding and facilitating the client's path to emotional insight while offering practical solutions.`;
-
-// New personalized introduction prompt
-const INTRO_PROMPT = `You are an AI therapist named Dr. Alex Morgan. 
-Introduce yourself warmly and briefly to the user.
-Ask for their name in a conversational way.
-Mention that you're here to listen and support them.
-Keep your introduction under 100 words and make it feel welcoming.
-`;
-
-// Welcome back prompt for returning users
-const WELCOME_BACK_PROMPT = `You are Dr. Alex Morgan, an AI therapist welcoming back {userName}.
-Create a warm, personal welcome back message that:
-1. Greets them by name
-2. Expresses genuine pleasure at seeing them again
-3. References that you've spoken before (but don't mention specific details from previous sessions)
-4. Invites them to share what's on their mind today
-Keep it under 100 words and maintain a warm, supportive tone.
-"`;
-
-// Onboarding questions prompt to gather information naturally
-const ONBOARDING_PROMPT = `You are Dr. Alex Morgan, an AI therapist having a conversation with a new client named {userName}.
-
-CONVERSATION APPROACH:
-- This is an initial session to build rapport and understanding
-- Integrate questions naturally into conversation, not as a checklist
-- Adapt your follow-up questions based on what {userName} shares
-- Use their name occasionally to create connection
-
-KEY EXPLORATION AREAS (weave these in conversationally):
-- What brings them to therapy or what they hope to gain
-- Their current emotional state and patterns
-- Their age (ask naturally: "If you don't mind sharing, what stage of life are you in right now?")
-- Their occupation and how it impacts their wellbeing (ask naturally during conversation)
-- Important life domains (relationships, work, personal growth)
-- Previous coping strategies or what's helped them before
-
-CONVERSATION STYLE:
-- Warm, genuine curiosity rather than clinical assessment
-- Occasional gentle humor when appropriate
-- Use relatable metaphors that normalize experiences
-- Respond thoughtfully to what they share before exploring a new area
-- Adapt your responses to be appropriate for their age, gender, and occupation once revealed
-- If their name suggests a particular gender, feel free to use examples that might resonate more with that gender, but remain inclusive
-`;
-
-const PERSONAL_CONVO_PROMPT = `You are Dr. Alex Morgan, an AI therapist talking with {userName}.
-You already know them from previous conversations.
-Refer to their previous topics and feelings when appropriate.
-Use their name occasionally in your responses to maintain a personal connection.
-`;
-const PROBING_NUDGE_PROBABILITY = 0.6;
-
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
     console.log(`Processing message for User: ${userId}, Session: ${sessionId}`);
@@ -334,8 +211,8 @@ ${userProfile.onboardingSummary}
           // Save to long-term memory only after successful summarization
           if (this.shouldSaveToLongTerm(isSummarizing, message, response)) {
             console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
-            const mood = await this.analyzeMood(message); // Analyze original user message
-            const topic = await this.analyzeTopic(message); // Analyze original user message
+            const mood = await TopicAnalyzer.analyzeMood(message); // Analyze original user message
+            const topic = await TopicAnalyzer.analyzeTopic(message); // Analyze original user message
             console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
             await MemoryService.saveLongTermMemory(userId, {
               content: message, // Original user message
@@ -369,108 +246,6 @@ ${userProfile.onboardingSummary}
     }
   }
 
-  // --- NEW METHOD for generating inactivity nudge ---
-  static async generateNudge(userId, sessionId) {
-    console.log(`Generating nudge for User: ${userId}, Session: ${sessionId}`);
-
-    try {
-      // 1. Get current session context
-      const sessionMemory = await MemoryService.getSessionMemory(sessionId);
-
-      // 2. Validate session and context existence
-      if (!sessionMemory || !sessionMemory.chat_context || sessionMemory.chat_context.length === 0) {
-        console.warn(`Cannot generate nudge: Session ${sessionId} not found or has empty context.`);
-        return { response: null };
-      }
-
-      // Use the full chat context provided to the generation function later
-      const chatContext = sessionMemory.chat_context;
-
-      // 3. Decide Nudge Type (Random Choice)
-      const nudgeTypeRoll = Math.random();
-      // Require at least one user message and one AI response for a meaningful probing nudge
-      const canProbe = chatContext.some(m => m.role === 'user') && chatContext.some(m => m.role === 'assistant');
-      const useProbingNudge = nudgeTypeRoll < PROBING_NUDGE_PROBABILITY && canProbe;
-
-      let systemPromptForNudge = "";
-      const nudgeUserPrompt = ""; // User prompt is not needed for the nudge itself
-
-      if (useProbingNudge) {
-        console.log(`Nudge Type: Probing (Roll: ${nudgeTypeRoll.toFixed(2)})`);
-
-        // Construct the probing system prompt - Instructs AI to analyze the provided history
-        systemPromptForNudge = `You are the AI therapist from the ongoing conversation. The user has paused after your last response.
-        Your task is to gently re-engage them by asking ONE thoughtful, open-ended, reflective question based on the conversation history provided to you.
-
-        Instructions:
-        1. Review the recent flow of the conversation history you received.
-        2. Identify a key theme, emotion, event, or point mentioned by the user that seems significant or could benefit from further exploration.
-        3. Formulate ONE concise (under 25 words) question related to that identified point.
-        4. The question should encourage deeper reflection or elaboration. Avoid simple check-ins like "take your time" or generic "how are you feeling?". Focus on connecting to the *content* of the past exchange.
-        5. Maintain your core empathetic, non-judgmental therapist persona: ${BASE_THERAPIST_PROMPT}
-
-        Example Question Styles (adapt based on your analysis of the history):
-        - "Reflecting on when you mentioned [topic/feeling from history], what's coming up for you now?"
-        - "You talked about [event/person from history] earlier. I'm curious how that thread connects to where we are now?"
-        - "What feelings are present for you as you pause here, considering our discussion about [theme from history]?"
-        - "Could exploring [specific detail user mentioned in history] further be helpful right now?"
-
-        Ask only the single question. Do not add any preamble like "I noticed you paused...".`; // Added instruction to be direct
-
-      } else {
-        console.log(`Nudge Type: Gentle Check-in (Roll: ${nudgeTypeRoll.toFixed(2)}, Can Probe: ${canProbe})`);
-        // Use the original gentle check-in prompt
-        systemPromptForNudge = `You are the AI therapist from the ongoing conversation. The user has paused for a short while after your last response. Offer a *gentle, brief, and non-pressuring* check-in to re-engage them softly. Avoid making demands or sounding impatient. Examples: "Just checking in, take your time.", "No rush, just wanted to see how you're processing that.", "Any thoughts emerging?", "Is there anything else on your mind regarding that?". Keep it under 20 words. Your persona MUST remain consistent with the main therapist prompt: ${BASE_THERAPIST_PROMPT}`;
-      }
-
-      // 4. Generate the Nudge Response
-      console.log(`Generating Nudge Response using ${chatContext.length} context items for Session: ${sessionId}`);
-      const nudgeResponseText = await generateChatResponse(
-        nudgeUserPrompt, // Empty user prompt
-        chatContext, // Provide the FULL current conversation history here
-        systemPromptForNudge // Use the dynamically selected system prompt
-      );
-
-      // 5. Handle potential empty or failed generation
-      if (!nudgeResponseText || nudgeResponseText.trim() === "") {
-        console.warn(`Nudge generation resulted in empty response for Session: ${sessionId}`);
-        return { response: null }; // Don't save or send an empty nudge
-      }
-
-      console.log(`Generated Nudge: ${nudgeResponseText}`);
-
-      // 6. Add the AI's nudge message to the context
-      // Ensure chatContext is the array reference from sessionMemory if modifying directly
-       sessionMemory.chat_context.push({ // Modify the array within the sessionMemory object
-        role: 'assistant',
-        content: nudgeResponseText
-       });
-
-      // 7. Save updated session memory (including the nudge)
-      console.log(`Saving Session Memory after nudge for Session: ${sessionId}`);
-      await MemoryService.saveSessionMemory(
-        sessionId,
-        userId,
-        sessionMemory.chat_context // Save the updated context array from the sessionMemory object
-      );
-
-      // 8. Return the nudge response to the frontend route handler
-      return {
-        response: nudgeResponseText,
-      };
-
-    } catch (error) {
-      console.error('Critical Error Generating Nudge:', error);
-      console.error('Error Details:', {
-        userId,
-        sessionId,
-        errorName: error.name,
-        errorMessage: error.message,
-      });
-      throw new Error('Failed to generate nudge message due to an internal server error.');
-    }
-  }
-
   static formatContextFromMemories(memories) {
     console.log(`Formatting Context from ${memories ? memories.length : 0} Memories`);
     
@@ -488,53 +263,10 @@ ${userProfile.onboardingSummary}
       .join('\n');
   }
 
-  static  shouldSaveToLongTerm(isSummarizing, message, response) {
+  static shouldSaveToLongTerm(isSummarizing, message, response) {
     return isSummarizing; // Properly return the boolean flag
   }
 
-  static async analyzeMood(message) {
-    console.log(`Analyzing Mood for Message: ${message ? message.substring(0, 50) + '...' : 'EMPTY'}`);
-    
-    // Skip mood analysis for empty messages (auto welcomes)
-    if (!message || message.trim() === '') {
-      return "unknown";
-    }
-    
-    try {
-      const HUGGINGFACE_MOOD_API_URL="https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base";
-      console.log(`Sending Mood Analysis Request to: ${HUGGINGFACE_MOOD_API_URL}`);
-      
-      const response = await axios.post(
-        HUGGINGFACE_MOOD_API_URL,
-        { inputs: message },
-        {
-          headers: {
-            Authorization: `Bearer ${config.huggingface.apiKey2}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Extract highest-confidence emotion
-      const emotions = response.data[0];
-      const highestEmotion = emotions.reduce((prev, current) =>
-        prev.score > current.score ? prev : current
-      );
-
-      console.log("Mood Analysis Result:", {
-        emotion: highestEmotion.label,
-        confidence: highestEmotion.score
-      });
-
-      return highestEmotion.label; 
-    } catch (error) {
-      console.error("Mood Analysis Error:", {
-        errorMessage: error.message,
-        apiResponse: error.response ? error.response.data : 'No API response'
-      });
-      return "unknown";
-    }
-  }
   static async extractUserName(userMessage, aiResponse) {
     try {
       // Skip name extraction for empty messages (auto welcomes)
@@ -561,151 +293,7 @@ ${userProfile.onboardingSummary}
       return null;
     }
   }
-
-  static async analyzeTopic(message) {
-    console.log(`Analyzing Topic for Message: ${message ? message.substring(0, 50) + '...' : 'EMPTY'}`);
-    
-    // Skip topic analysis for empty messages (auto welcomes)
-    if (!message || message.trim() === '') {
-      return "auto-welcome";
-    }
-    
-    try {
-      // Validate input
-      if (!message || typeof message !== 'string' || message.trim().length === 0) {
-        console.warn('Invalid message for topic analysis');
-        return this.analyzeTopicWithKeywords(message);
-      }
   
-      // Truncate very long messages to avoid payload issues
-      const truncatedMessage = message.substring(0, 500);
-  
-      // HuggingFace API endpoint for inference
-      const API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli";
-      
-      // Therapy-relevant topic labels to classify against
-      const candidateLabels = [
-        "mental health",      // Covers anxiety, depression, grief, trauma
-        "relationships",      // Covers romantic, family, friendships, identity
-        "work & career",      // Covers work-stress, life-transition
-        "self-esteem",        // Covers self-worth, confidence issues
-        "addiction",          // Stays as it is
-        "sleep issues",       // Stays as it is
-        "health concerns",    // Covers health-anxiety, chronic illness stress
-        "parenting",          // Stays as it is
-        "loneliness",         // Stays as it is
-        "existential crisis"  // Stays as it is
-      ];
-  
-      // Prepare the request payload with more robust error checking
-      const payload = {
-        inputs: truncatedMessage,
-        parameters: {
-          candidate_labels: candidateLabels,
-          multi_label: false
-        }
-      };
-  
-      // Make API call to Hugging Face with additional error handling
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${config.huggingface.apiKey2}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-  
-      // Check response status
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`Hugging Face API Error: ${response.status}`, errorBody);
-        throw new Error(`Hugging Face API returned ${response.status}: ${errorBody}`);
-      }
-  
-      const result = await response.json();
-      
-      // Validate result structure
-      if (!result.labels || !result.scores) {
-        console.warn('Unexpected API response structure');
-        return this.analyzeTopicWithKeywords(message);
-      }
-      
-      // Get the highest scoring label
-      const topLabelIndex = result.scores.indexOf(Math.max(...result.scores));
-      const topLabel = result.labels[topLabelIndex];
-      
-      // Only accept the classification if confidence is reasonable
-      if (result.scores[topLabelIndex] > 0.3) {
-        return topLabel;
-      }
-      
-      // Fallback to secondary analysis for low-confidence results
-      return this.analyzeTopicWithKeywords(message);
-    } catch (error) {
-      console.error('Error using Hugging Face for topic analysis:', 
-        error.message, 
-        error.response ? error.response.data : 'No additional error details'
-      );
-      
-      // Always fall back to keyword analysis
-      return this.analyzeTopicWithKeywords(message);
-    }
-  }
-
-  // Fallback method using keyword matching
-  static analyzeTopicWithKeywords(message) {
-    console.log(`Analyzing Topic with Keyword Method: ${message ? message.substring(0, 50) + '...' : 'EMPTY'}`);
-    
-    if (!message || message.trim() === '') {
-      return "auto-welcome";
-    }
-    
-    const messageLower = message.toLowerCase();
-    
-    // Topic keywords mapping
-    const topicKeywords = {
-      'anxiety': ['anxious', 'worry', 'nervous', 'panic', 'stress', 'overwhelm', 'fear'],
-      'depression': ['depressed', 'sad', 'hopeless', 'empty', 'unmotivated', 'tired', 'despair'],
-      'relationships': ['partner', 'marriage', 'boyfriend', 'girlfriend', 'family', 'friend', 'coworker'],
-      'grief': ['loss', 'death', 'died', 'passed away', 'miss', 'grieving', 'mourning'],
-      'trauma': ['trauma', 'ptsd', 'abuse', 'assault', 'flashback', 'nightmare', 'trigger'],
-      'self-esteem': ['confidence', 'worth', 'failure', 'inadequate', 'not good enough', 'self-image'],
-      'work-stress': ['job', 'career', 'workplace', 'boss', 'burnout', 'overworked', 'deadline'],
-      'identity': ['identity', 'purpose', 'meaning', 'values', 'goals', 'sexuality', 'gender'],
-      'addiction': ['addiction', 'substance', 'alcohol', 'drinking', 'drugs', 'gambling', 'recovery'],
-      'sleep': ['insomnia', 'sleep', 'tired', 'fatigue', 'nightmare', 'rest', 'exhausted'],
-      'health-anxiety': ['health', 'illness', 'disease', 'symptoms', 'doctor', 'medical', 'diagnosis'],
-      'life-transition': ['change', 'transition', 'move', 'new job', 'graduation', 'retirement', 'milestone']
-    };
-    
-    // Count keyword matches for each topic
-    const topicScores = {};
-    for (const [topic, keywords] of Object.entries(topicKeywords)) {
-      topicScores[topic] = 0;
-      keywords.forEach(keyword => {
-        if (messageLower.includes(keyword)) {
-          topicScores[topic]++;
-        }
-      });
-    }
-    
-    // Find topic with highest score
-    
-    let maxScore = 0;
-    let detectedTopic = 'general-discussion';
-    
-    for (const [topic, score] of Object.entries(topicScores)) {
-      if (score > maxScore) {
-        maxScore = score;
-        detectedTopic = topic;
-      }
-    }
-    
-    console.log(`Keyword Topic Detection Result: ${detectedTopic} (Score: ${maxScore})`);
-    
-    return maxScore > 0 ? detectedTopic : 'general-discussion';
-  }
   static async generateOnboardingSummary(chatContext, userName) {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
