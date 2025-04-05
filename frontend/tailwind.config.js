@@ -9,52 +9,41 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#4D4B30',
-          hover: '#3a392b',
-        },
-        secondary: {
-          DEFAULT: '#908660',
-          hover: '#7d7453',
-        },
-        accent: {
-          DEFAULT: '#482216',
-          hover: '#351910',
-        },
-        cream: {
-          DEFAULT: '#FEEBCA',
-          hover: '#f9e0b5',
-        },
-        peach: {
-          DEFAULT: '#F4CCA6',
-          hover: '#efc193',
-        },
-        coral: {
-          DEFAULT: '#DAA38B',
-          hover: '#d1917a',
+          DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
+          hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
         },
         background: {
-          DEFAULT: '#FEEBCA',
-          secondary: '#F4CCA6',
+          DEFAULT: 'rgb(var(--color-background) / <alpha-value>)',
+          secondary: 'rgb(var(--color-background-secondary) / <alpha-value>)',
         }
       },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Poppins', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'breathe': 'breathe 4s ease-in-out infinite',
+        'wave': 'wave 3s ease-in-out infinite',
+      },
       keyframes: {
-        scroll: {
-          '0%': { transform: 'translateX(0)' },
-          '100%': { transform: 'translateX(-50%)' }
-        },
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' }
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
         breathe: {
           '0%, 100%': { transform: 'scale(1)' },
-          '50%': { transform: 'scale(1.05)' }
+          '50%': { transform: 'scale(1.05)' },
+        },
+        wave: {
+          '0%': { transform: 'rotate(0deg)' },
+          '50%': { transform: 'rotate(15deg)' },
+          '100%': { transform: 'rotate(0deg)' },
         }
       },
-      animation: {
-        scroll: 'scroll 20s linear infinite',
-        fadeIn: 'fadeIn 0.5s ease-in-out',
-        breathe: 'breathe 4s ease-in-out infinite'
+      boxShadow: {
+        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       }
     },
   },

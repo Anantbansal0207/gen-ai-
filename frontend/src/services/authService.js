@@ -195,7 +195,7 @@ export const checkAuthStatus = async () => {
 
 export const signOut = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/signout`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signout`, {
       method: 'POST',
       credentials: 'include',
       headers: {

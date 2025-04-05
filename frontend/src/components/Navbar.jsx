@@ -10,7 +10,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
   const isCurrentPath = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-background shadow-lg transition-colors duration-200 sticky top-0 z-50">
+    <nav style={{position: 'sticky', top: 0, zIndex: 1000}} className="bg-background shadow-lg transition-colors duration-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">

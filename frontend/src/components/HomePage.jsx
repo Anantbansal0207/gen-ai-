@@ -1,39 +1,38 @@
 import React, { useState } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import therapist from '../assets/therapist.jpg';
 
 const HomePage = ({ onGetStarted }) => {
   const [calmMode, setCalmMode] = useState(false);
 
   return (
     <div className={`min-h-screen transition-all duration-500 ${calmMode ? 'opacity-90' : ''}`}>
+
       <div className="text-center space-y-24">
         {/* Hero Section */}
         <div className="max-w-6xl mx-auto px-4 pt-20">
           <div className="flex flex-col md:flex-row items-center justify-between gap-12">
             <div className="text-left max-w-2xl">
-              <div className="flex items-center gap-4 mb-6">
-                <h1 className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
-                  Your AI Companion for Mental Wellness
+              <div style={{ width: '90vw' }} className="flex items-center gap-4 mb-6">
+                <h1 style={{ marginTop: '-40px', fontSize: '55px', textAlign: 'center', position: 'relative', zIndex: 100 }} className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
+                  Experience the{" "}
+                  <span style={{ width: '150px', fontSize: '30px', alignContent: 'center', alignItems: 'center' }} className="inline-block bg-green-500 text-white px-6 py-2 rounded-full text-2xl w-[120px] text-center -mt-2 relative">
+                    gentle
+                  </span>{" "}
+                  <br />
+                  <span style={{ fontSize: '30px' }} className="inline-block bg-red-500 text-white px-6 py-2 rounded-full text-2xl w-[160px] text-center -mt-2 relative">
+                    support
+                  </span>{" "}
+                  mindful therapy
+                  <img style={{ transform: 'scale(0.7)', marginTop: '-150px', borderRadius: '20px', position: 'relative', zIndex: -1 }} src={therapist} alt="" />
                 </h1>
-                <button
-                  onClick={() => setCalmMode(!calmMode)}
-                  className={`p-3 rounded-full transition-all duration-300 ${
-                    calmMode ? 'bg-primary text-white' : 'bg-secondary text-accent'
-                  }`}
-                  title={calmMode ? 'Disable Calm Mode' : 'Enable Calm Mode'}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                </button>
               </div>
 
-              <p className="mt-6 text-xl text-accent/80 sm:text-2xl md:text-3xl leading-relaxed">
+              <p style={{ width: '90vw', transform: 'scale(0.8)', marginTop: "-100px", textAlign: 'center' }} className="mt-6 text-xl text-accent/80 sm:text-2xl md:text-3xl leading-relaxed">
                 Experience compassionate AI therapy in a safe, judgment-free space. Your journey to better mental health starts here.
               </p>
 
-              <div className="mt-10">
+              <div style={{ width: '90vw', textAlign: 'center' }} className="mt-10">
                 <button
                   onClick={onGetStarted}
                   className="px-8 py-4 text-lg font-medium text-white bg-primary hover:bg-primary-hover transition-all duration-300 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105"
