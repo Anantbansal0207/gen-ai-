@@ -31,7 +31,8 @@ const AI_IDENTIFYING_KEYWORDS = [
   'digital assistant',
   'virtual assistant',
   'algorithm',
-  'bot'
+  'bot',
+  'human'
 ];
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
@@ -157,7 +158,7 @@ export class ChatService {
 
       // Enhanced user profile handling - Make the importance of this data more explicit
       if (userName) {
-        const userInfo = `[CRITICAL CLIENT INFORMATION - MUST USE IN RESPONSES]
+        const userInfo = `[CRITICAL CLIENT INFORMATION ]
 The client's name is: ${userName}. Use their name some times (30 percent) in your responses.`;
         
         const profileSummary = userProfile.onboardingSummary 
