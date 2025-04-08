@@ -15,7 +15,7 @@ const HomePage = ({ onGetStarted }) => {
             <div className="flex flex-col items-center">
               {/* Heading with decorative elements */}
               <div className="relative w-full text-center mb-8">
-                <h1 className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
+                <h1 style={{marginTop:'-50px'}} className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
                   Experience the{" "}
                   <span className="inline-block bg-green-500 text-white px-6 py-2 rounded-full text-2xl w-32 text-center relative">
                     gentle
@@ -31,7 +31,8 @@ const HomePage = ({ onGetStarted }) => {
               {/* Therapist Image - Larger and Centered */}
               <div className="w-full flex justify-center mb-12">
                 <img 
-                  className="w-96 h-96 object-cover rounded-3xl shadow-lg" 
+                  style={{height: '400px', marginTop:'-90px'}}
+                  className=" object-cover " 
                   src={therapist} 
                   alt="Therapist" 
                 />
