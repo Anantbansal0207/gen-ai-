@@ -146,18 +146,26 @@ ${userProfile.onboardingSummary}
         contextWithMemories,
         customPrompt
       );
+      let finalResponse = response;
+      if (containsAITerm(response)) {
+      console.log('AI identifying terms found in response. Refining...');
+      finalResponse = await refineResponse(response);
+      console.log(`Refined Response: ${finalResponse}`);
+      } else {
+      console.log('No AI identifying terms found in response.');
+      }
 
-      console.log(`Generated Response: ${response}`);
+      console.log(`Generated Response: ${finalResponse}`);
 
       // Add AI response to context
       sessionMemory.chat_context.push({
         role: 'assistant',
-        content: response
+        content: finalResponse
       });
       
       if (isFirstInteraction && !userProfile && !isAutoWelcome) {
         // Only try to extract names from actual user messages, not auto welcomes
-        const extractedName = await this.extractUserName(message, response);
+        const extractedName = await this.extractUserName(message, finalResponse);
         if (extractedName) {
           console.log(`Extracted user name: ${extractedName}`);
           await MemoryService.saveUserProfile(userId, {
@@ -209,14 +217,14 @@ ${userProfile.onboardingSummary}
           await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
 
           // Save to long-term memory only after successful summarization
-          if (this.shouldSaveToLongTerm(isSummarizing, message, response)) {
+          if (this.shouldSaveToLongTerm(isSummarizing, message, finalResponse)) {
             console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
             const mood = await TopicAnalyzer.analyzeMood(message); // Analyze original user message
             const topic = await TopicAnalyzer.analyzeTopic(message); // Analyze original user message
             console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
             await MemoryService.saveLongTermMemory(userId, {
               content: message, // Original user message
-              response: response, // AI response to that message
+              response: finalResponse, // AI response to that message
               type: 'summary_interaction', // Mark as part of a summarized interaction
               mood: mood,
               topic: topic
@@ -228,7 +236,7 @@ ${userProfile.onboardingSummary}
       }
 
       return {
-        response,
+        finalResponse,
         context: sessionMemory.chat_context // Return the potentially updated context
       };
     } catch (error) {
