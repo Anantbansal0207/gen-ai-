@@ -36,6 +36,26 @@ const AI_IDENTIFYING_KEYWORDS = [
 ];
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+function shouldIncludeNameInContext(sessionMemory, userName) {
+  if (!userName) return false;
+  
+  // Only include name in roughly 15% of messages
+  const randomChance = Math.random() < 0.15;
+  
+  // Count recent messages to avoid consecutive name usage
+  const recentMessages = sessionMemory.chat_context
+    .filter(msg => msg.role === 'assistant')
+    .slice(-3); // Look at last 3 assistant messages
+  
+  // Check if name was used in recent messages
+  const namePattern = new RegExp(`\\b${userName}\\b`, 'i');
+  const nameUsedRecently = recentMessages.some(msg => 
+    namePattern.test(msg.content)
+  );
+  
+  // Only include name if random chance hits AND name wasn't used recently
+  return randomChance && !nameUsedRecently;
+}
 function containsAITerm(text) {
   if (!text) {
       return false;
@@ -158,8 +178,17 @@ export class ChatService {
 
       // Enhanced user profile handling - Make the importance of this data more explicit
       if (userName) {
+        const shouldIncludeName = shouldIncludeNameInContext(sessionMemory, userName);
+        
         const userInfo = `[CRITICAL CLIENT INFORMATION ]
 The client's name is: ${userName}. Use their name some times (30 percent) in your responses.`;
+if (shouldIncludeName) {
+  userInfo += ` Use their name once in your response in a natural way.`;
+  console.log(`Including instruction to use ${userName}'s name in this response`);
+} else {
+  userInfo = ` DO NOT use their name in this response.`;
+  console.log(`Excluding name usage for this response`);
+}
         
         const profileSummary = userProfile.onboardingSummary 
           ? `\n\n[CLIENT PROFILE - ESSENTIAL CONTEXT]
