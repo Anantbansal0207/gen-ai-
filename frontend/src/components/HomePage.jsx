@@ -31,7 +31,7 @@ const HomePage = ({ onGetStarted }) => {
               {/* Therapist Image - Larger and Centered */}
               <div className="w-full flex justify-center mb-12">
                 <img 
-                  style={{height: '500px', marginTop:'-90px'}}
+                  style={{height: '560px', width:'1100px' ,marginTop:'-70px'}}
                   className=" object-cover " 
                   src={therapist} 
                   alt="Therapist" 
@@ -91,6 +91,77 @@ const HomePage = ({ onGetStarted }) => {
             </div>
           </div>
         </div>
+
+        <div style={{margin:'0px'}} className="bg-white py-20 w-full">
+  <div className="max-w-6xl mx-auto px-4">
+    <h2 className="text-3xl font-bold text-accent mb-16 text-center">
+      How It Works
+    </h2>
+    
+    <div className="relative">
+      {/* Vertical line */}
+      <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-primary/30 rounded-full"></div>
+      
+      {/* Step 1 */}
+      <div className="md:flex items-center mb-16">
+        <div className="md:w-1/2 pr-8 md:text-right">
+          <h3 style={{textAlign:'center'}} className="text-2xl font-bold text-primary mb-3">1. Start a Conversation</h3>
+          <p style={{textAlign:'center'}} className="text-accent/70 text-lg">
+            Begin your journey in a safe space. Share what's on your mind without judgment or time constraints.
+          </p>
+        </div>
+        <div className="hidden md:flex justify-center items-center">
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-xl font-bold shadow-lg z-10">1</div>
+        </div>
+        <div className="md:w-1/2 pl-8 mt-4 md:mt-0">
+          <div className="bg-secondary/10 p-6 rounded-2xl">
+            <div className="text-5xl mb-4">🗣️</div>
+            <p className="italic text-accent/80">"I've been feeling overwhelmed lately with everything going on..."</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Step 2 */}
+      <div className="md:flex items-center mb-16 flex-row-reverse">
+        <div className="md:w-1/2 pl-8 md:text-left">
+          <h3 style={{textAlign:'center'}} className="text-2xl font-bold text-primary mb-3">2. Receive Thoughtful Guidance</h3>
+          <p style={{textAlign:'center'}} className="text-accent/70 text-lg">
+            Get personalized responses grounded in therapeutic approaches and emotional intelligence.
+          </p>
+        </div>
+        <div className="hidden md:flex justify-center items-center">
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-xl font-bold shadow-lg z-10">2</div>
+        </div>
+        <div className="md:w-1/2 pr-8 mt-4 md:mt-0">
+          <div className="p-6 rounded-2xl">
+            <div className="text-5xl mb-4">💭</div>
+            <p className="italic text-accent/80">"That sounds challenging. Let's explore some ways to manage these feelings together..."</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Step 3 */}
+      <div className="md:flex items-center">
+        <div className="md:w-1/2 pr-8 md:text-right">
+          <h3 style={{textAlign:'center'}} className="text-2xl font-bold text-primary mb-3">3. Practice & Grow</h3>
+          <p style={{textAlign:'center'}} className="text-accent/70 text-lg">
+            Apply insights to your daily life and track your progress over time with personalized reflection tools.
+          </p>
+        </div>
+        <div className="hidden md:flex justify-center items-center">
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-xl font-bold shadow-lg z-10">3</div>
+        </div>
+        <div className="md:w-1/2 pl-8 mt-4 md:mt-0">
+          <div className="p-6 rounded-2xl">
+            <div className="text-5xl mb-4">📈</div>
+            <p className="italic text-accent/80">"I've noticed myself using those breathing techniques we discussed, and they're really helping..."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
 
         {/* Testimonials Section */}
         <div style={{margin:'0px',padding:'0px', marginBottom:'100px'}} className="w-full px-4 py-20">
