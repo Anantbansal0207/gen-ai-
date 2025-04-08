@@ -31,7 +31,7 @@ const HomePage = ({ onGetStarted }) => {
               {/* Therapist Image - Larger and Centered */}
               <div className="w-full flex justify-center mb-12">
                 <img 
-                  style={{height: '560px', width:'1100px' ,marginTop:'-70px'}}
+                  style={{height: '500px',marginTop:'-90px'}}
                   className=" object-cover " 
                   src={therapist} 
                   alt="Therapist" 
