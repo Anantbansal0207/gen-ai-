@@ -12,47 +12,74 @@ const HomePage = ({ onGetStarted }) => {
         <div className="w-full px-4 pt-20">
           <div className="max-w-6xl mx-auto">
             {/* Hero Content */}
-            <div className="flex flex-col items-center">
-              {/* Heading with decorative elements */}
-              <div className="relative w-full text-center mb-8">
-                <h1 style={{marginTop:'-50px'}} className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
-                  Experience the{" "}
-                  <span className="inline-block bg-green-500 text-white px-6 py-2 rounded-full text-2xl w-32 text-center relative">
-                    gentle
-                  </span>{" "}
-                  <br />
-                  <span className="inline-block bg-red-500 text-white px-6 py-2 rounded-full text-2xl w-40 text-center relative">
-                    support
-                  </span>{" "}
-                  mindful therapy
-                </h1>
-              </div>
-
-              {/* Therapist Image - Larger and Centered */}
-              <div className="w-full flex justify-center mb-12">
-                <img 
-                  style={{height: '560px', width:'1100px' ,marginTop:'-70px'}}
-                  className=" object-cover " 
-                  src={therapist} 
-                  alt="Therapist" 
-                />
-              </div>
-
-              {/* Description */}
-              <p className="max-w-3xl mx-auto text-xl text-accent/80 sm:text-2xl md:text-3xl leading-relaxed">
-                Experience compassionate AI therapy in a safe, judgment-free space. Your journey to better mental health starts here.
-              </p>
-
-              {/* CTA Button */}
-              <div className="mt-10">
-                <button
-                  onClick={onGetStarted}
-                  className="px-8 py-4 text-lg font-medium text-white bg-primary hover:bg-primary-hover transition-all duration-300 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Start Your Journey
-                </button>
-              </div>
+            {/* Hero Section */}
+{/* Hero Section */}
+{/* Hero Section */}
+{/* Hero Section */}
+<div className="w-full bg-amber-50/30 px-4 pt-12 pb-16">
+  <div className="max-w-6xl mx-auto">
+    <div className="flex flex-col md:flex-row items-center justify-between">
+      {/* Left Side - Text Content */}
+      <div className="w-full md:w-1/2 pr-0 md:pr-8">
+        <div className="text-left">
+          <p className="text-base text-primary/80 font-medium tracking-wider mb-2">MINDFUL MENTAL WELLNESS</p>
+          
+          <h1 style={{fontSize:'40px'}} className="text-4xl md:text-5xl lg:text-6xl font-bold text-accent leading-tight mb-6">
+            <div className="flex items-center flex-wrap">
+              <span>Experience the </span>
+              <span className="inline-block bg-green-500 text-white px-5 py-1 rounded-full text-2xl relative ml-2">
+                gentle
+              </span>
             </div>
+            
+            <div className="mt-2 flex items-center flex-wrap">
+              <span className="inline-block bg-red-500 text-white px-5 py-1 rounded-full text-2xl relative mr-2">
+                support
+              </span>
+              <span>mindful therapy</span>
+            </div>
+          </h1>
+          
+          <p className="text-lg text-accent/80 leading-relaxed mb-8 max-w-lg">
+            Experience compassionate AI therapy in a safe, judgment-free space. Your journey to better mental health starts here.
+          </p>
+          
+          <div className="flex flex-wrap gap-4">
+            <button className="px-8 py-4 text-lg font-medium text-white bg-primary hover:bg-primary-hover transition-all duration-300 rounded-full shadow-md hover:shadow-lg">
+              Start Your Journey
+            </button>
+            
+            <div className="flex items-center">
+              <div className="flex -space-x-2">
+                <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center text-xs">⭐</div>
+                <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center text-xs">⭐</div>
+                <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center text-xs">⭐</div>
+              </div>
+              <span className="ml-3 text-sm font-medium text-accent/70">Over 5,000+ satisfied clients</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Right Side - Image */}
+      <div className="w-full md:w-1/2 mt-12 md:mt-0">
+        <div className="relative">
+          <img 
+            className="w-full h-auto rounded-lg shadow-lg object-cover" 
+            src={therapist} 
+            alt="Mindful Therapy" 
+          />
+          <div className="absolute -bottom-4 -left-4 bg-white px-6 py-3 rounded-lg shadow-md hidden md:block">
+            <div className="flex items-center">
+              <div className="text-amber-400 text-xl mr-2">★★★★★</div>
+              <div className="text-sm font-medium">Trusted by thousands</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
             {/* Animation */}
             {/* <div className="w-full mt-16 animate-breathe">
