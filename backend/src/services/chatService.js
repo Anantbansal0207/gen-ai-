@@ -279,9 +279,10 @@ ${userProfile.onboardingSummary}
       }
 
       return {
-        finalResponse,
+        response: finalResponse,
         context: sessionMemory.chat_context // Return the potentially updated context
       };
+      
     } catch (error) {
       console.error('Critical Error Processing Message:', error);
       console.error('Error Details:', {
