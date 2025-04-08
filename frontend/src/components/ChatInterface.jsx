@@ -80,9 +80,9 @@ const ChatInterface = ({ user: propUser }) => {
       <FloatingLeaf className="text-teal-600/40" />
       
       {/* Main Container - Centered and Not Stretched */}
-      <div className="flex w-[1000px] h-[600px] bg-white/5 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden">
+      <div className="flex w-[1200px] h-[600px] rounded-xl shadow-2xl overflow-hidden">
         {/* Left Section - Static */}
-        <div className="w-[300px] bg-white/10 backdrop-blur-sm border-r border-white/10">
+        <div className="w-[300px] bg-white/10 backdrop-blur-lg border-r border-white/10">
           <div className="h-full flex flex-col p-6">
             {/* Logo and Title */}
             <div className="flex flex-col items-center mb-8">
@@ -164,7 +164,7 @@ const ChatInterface = ({ user: propUser }) => {
         </div>
 
         {/* Chat Section - Scrollable */}
-        <div className="flex-1 flex flex-col bg-white/30">
+        <div className="flex-1 flex flex-col backdrop-blur-sm ">
           {/* Chat Header */}
           <div className="bg-white/20 p-4 border-b border-white/20">
             <h2 className="text-lg font-semibold text-gray-700">Mindful Chat</h2>
