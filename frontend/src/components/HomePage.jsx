@@ -31,7 +31,7 @@ const HomePage = ({ onGetStarted }) => {
               {/* Therapist Image - Larger and Centered */}
               <div className="w-full flex justify-center mb-12">
                 <img 
-                  style={{height: '400px', marginTop:'-90px'}}
+                  style={{height: '500px', marginTop:'-90px'}}
                   className=" object-cover " 
                   src={therapist} 
                   alt="Therapist" 
@@ -55,18 +55,18 @@ const HomePage = ({ onGetStarted }) => {
             </div>
 
             {/* Animation */}
-            <div className="w-full mt-16 animate-breathe">
+            {/* <div className="w-full mt-16 animate-breathe">
               <DotLottieReact
                 src="https://lottie.host/ad44657b-79c0-4c65-b2b4-1a1b7aded2af/QKRH8YBqbF.lottie"
                 loop
                 autoplay
               />
-            </div>
+            </div> */}
           </div>
         </div>
 
         {/* Features Section */}
-        <div className="bg-secondary/30 py-20 w-full">
+        <div style={{margin:'0px'}} className="bg-secondary/30 py-20 w-full">
           <div className="max-w-6xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-accent mb-12 text-center">
               How We Support Your Mental Wellness
@@ -93,7 +93,7 @@ const HomePage = ({ onGetStarted }) => {
         </div>
 
         {/* Testimonials Section */}
-        <div className="w-full px-4 py-20">
+        <div style={{margin:'0px',padding:'0px', marginBottom:'100px'}} className="w-full px-4 py-20">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-accent mb-12 text-center">
               Stories of Growth
