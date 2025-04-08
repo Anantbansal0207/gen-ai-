@@ -6,33 +6,44 @@ const HomePage = ({ onGetStarted }) => {
   const [calmMode, setCalmMode] = useState(false);
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${calmMode ? 'opacity-90' : ''}`}>
-
-      <div className="text-center space-y-24">
+    <div className={`min-h-screen w-full transition-all duration-500 ${calmMode ? 'opacity-90' : ''}`}>
+      <div className="text-center space-y-24 w-full">
         {/* Hero Section */}
-        <div className="max-w-6xl mx-auto px-4 pt-20">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="text-left max-w-2xl">
-              <div style={{ width: '90vw' }} className="flex items-center gap-4 mb-6">
-                <h1 style={{ marginTop: '-40px', fontSize: '55px', textAlign: 'center', position: 'relative', zIndex: 100 }} className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
+        <div className="w-full px-4 pt-20">
+          <div className="max-w-6xl mx-auto">
+            {/* Hero Content */}
+            <div className="flex flex-col items-center">
+              {/* Heading with decorative elements */}
+              <div className="relative w-full text-center mb-8">
+                <h1 className="text-5xl font-extrabold text-accent sm:text-6xl md:text-7xl leading-tight animate-fadeIn">
                   Experience the{" "}
-                  <span style={{ width: '150px', fontSize: '30px', alignContent: 'center', alignItems: 'center' }} className="inline-block bg-green-500 text-white px-6 py-2 rounded-full text-2xl w-[120px] text-center -mt-2 relative">
+                  <span className="inline-block bg-green-500 text-white px-6 py-2 rounded-full text-2xl w-32 text-center relative">
                     gentle
                   </span>{" "}
                   <br />
-                  <span style={{ fontSize: '30px' }} className="inline-block bg-red-500 text-white px-6 py-2 rounded-full text-2xl w-[160px] text-center -mt-2 relative">
+                  <span className="inline-block bg-red-500 text-white px-6 py-2 rounded-full text-2xl w-40 text-center relative">
                     support
                   </span>{" "}
                   mindful therapy
-                  <img style={{ transform: 'scale(0.7)', marginTop: '-150px', borderRadius: '20px', position: 'relative', zIndex: -1 }} src={therapist} alt="" />
                 </h1>
               </div>
 
-              <p style={{ width: '90vw', transform: 'scale(0.8)', marginTop: "-100px", textAlign: 'center' }} className="mt-6 text-xl text-accent/80 sm:text-2xl md:text-3xl leading-relaxed">
+              {/* Therapist Image - Larger and Centered */}
+              <div className="w-full flex justify-center mb-12">
+                <img 
+                  className="w-96 h-96 object-cover rounded-3xl shadow-lg" 
+                  src={therapist} 
+                  alt="Therapist" 
+                />
+              </div>
+
+              {/* Description */}
+              <p className="max-w-3xl mx-auto text-xl text-accent/80 sm:text-2xl md:text-3xl leading-relaxed">
                 Experience compassionate AI therapy in a safe, judgment-free space. Your journey to better mental health starts here.
               </p>
 
-              <div style={{ width: '90vw', textAlign: 'center' }} className="mt-10">
+              {/* CTA Button */}
+              <div className="mt-10">
                 <button
                   onClick={onGetStarted}
                   className="px-8 py-4 text-lg font-medium text-white bg-primary hover:bg-primary-hover transition-all duration-300 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -42,7 +53,8 @@ const HomePage = ({ onGetStarted }) => {
               </div>
             </div>
 
-            <div className="w-full md:w-1/2 animate-breathe">
+            {/* Animation */}
+            <div className="w-full mt-16 animate-breathe">
               <DotLottieReact
                 src="https://lottie.host/ad44657b-79c0-4c65-b2b4-1a1b7aded2af/QKRH8YBqbF.lottie"
                 loop
@@ -53,7 +65,7 @@ const HomePage = ({ onGetStarted }) => {
         </div>
 
         {/* Features Section */}
-        <div className="bg-secondary/30 py-20">
+        <div className="bg-secondary/30 py-20 w-full">
           <div className="max-w-6xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-accent mb-12 text-center">
               How We Support Your Mental Wellness
@@ -80,24 +92,26 @@ const HomePage = ({ onGetStarted }) => {
         </div>
 
         {/* Testimonials Section */}
-        <div className="max-w-6xl mx-auto px-4 py-20">
-          <h2 className="text-3xl font-bold text-accent mb-12 text-center">
-            Stories of Growth
-          </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <TestimonialCard
-              quote="The AI therapist helped me develop better coping mechanisms. It's like having a supportive friend available 24/7."
-              author="Sarah M."
-            />
-            <TestimonialCard
-              quote="I was skeptical at first, but the personalized guidance has made a real difference in my anxiety management."
-              author="James K."
-            />
-            <TestimonialCard
-              quote="The calm environment and thoughtful responses helped me open up about issues I've never discussed before."
-              author="Emily R."
-            />
+        <div className="w-full px-4 py-20">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl font-bold text-accent mb-12 text-center">
+              Stories of Growth
+            </h2>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <TestimonialCard
+                quote="The AI therapist helped me develop better coping mechanisms. It's like having a supportive friend available 24/7."
+                author="Sarah M."
+              />
+              <TestimonialCard
+                quote="I was skeptical at first, but the personalized guidance has made a real difference in my anxiety management."
+                author="James K."
+              />
+              <TestimonialCard
+                quote="The calm environment and thoughtful responses helped me open up about issues I've never discussed before."
+                author="Emily R."
+              />
+            </div>
           </div>
         </div>
       </div>
