@@ -26,11 +26,12 @@ export class MemoryService {
       const sessionData = {
         session_id: sessionId,
         user_id: userId,
-        chat_context: context,
-        expires_in: 1800 // 30 minutes in seconds
+        chat_context: context
+        // Removed the expires_in property to make it persist indefinitely
       };
       
-      await redis.setex(`chat_session:${sessionId}`, 1800, JSON.stringify(sessionData));
+      // Using set instead of setex to store without expiration
+      await redis.set(`chat_session:${sessionId}`, JSON.stringify(sessionData));
       return true;
     } catch (error) {
       console.error('❌ Error saving session memory:', error);
@@ -50,6 +51,27 @@ export class MemoryService {
     } catch (error) {
       console.error('Error retrieving user profile:', error);
       return null;
+    }
+  }
+  static async deleteUserProfile(userId) {
+    try {
+      const profileKey = `user:${userId}:profile`;
+      
+      // Check if profile exists first
+      const existingProfile = await this.getUserProfile(userId);
+      
+      if (!existingProfile) {
+        console.log(`⚠️ No profile found for user ID: ${userId}`);
+        return false;
+      }
+      
+      // Delete the user profile from Redis
+      await redis.del(profileKey);
+      console.log(`✅ User profile deleted for user ID: ${userId}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error deleting user profile:', error);
+      return false;
     }
   }
   
