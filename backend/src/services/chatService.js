@@ -81,6 +81,84 @@ Refined Response:`;
       return originalResponse; // Return the original response in case of an error
   }
 }
+async function refineWithGemini(text) {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `Make this therapy response sound naturally human. Keep the meaning intact, but add subtle human elements (occasional filler words, natural phrasing, slight informality). Don't overdo it - aim for subtle authenticity rather than obvious changes. Return only the refined text.Let the slight imperfections remain there.
+
+Original text:
+${text}`;
+
+    const result = await model.generateContent(prompt);
+    const refinedText = result.response.text().trim();
+    return refinedText;
+  } catch (error) {
+    console.error('Error refining with Gemini:', error);
+    return text; // Return original text if refinement fails
+  }
+}
+
+async function humanizeResponse(response) {
+  let modifications = 0;
+  const MAX_MODIFICATIONS = 2;
+  // Typo injection
+  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
+    const words = response.split(' ');
+    const idx = Math.floor(Math.random() * words.length);
+    const word = words[idx];
+    if (word && word.length > 4) {
+      const typoType = Math.floor(Math.random() * 2);
+      let newWord = word;
+      if (typoType === 0) {
+        const pos = Math.floor(Math.random() * (word.length - 2)) + 1;
+        newWord = word.substring(0, pos) + word[pos + 1] + word[pos] + word.substring(pos + 2);
+      } else {
+        const pos = Math.floor(Math.random() * (word.length - 1));
+        newWord = word.substring(0, pos) + word[pos] + word.substring(pos);
+      }
+      words[idx] = newWord;
+      response = words.join(' ');
+      modifications++;
+    }
+  }
+  // Punctuation change
+  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
+    response = response.replace(/\.\s+([A-Z])/g, (_, p1) => {
+      if (Math.random() < 0.4) {
+        return ', and ' + p1.toLowerCase();
+      }
+      return '. ' + p1;
+    });
+    modifications++;
+  }
+  // Filler insertion
+  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
+    const fillers = ['like', 'um', 'you know', 'I mean', 'actually'];
+    const sentences = response.split(/(?<=[.!?])\s+/);
+    let inserted = false;
+    for (let i = 0; i < sentences.length; i++) {
+      if (inserted) break;
+      if (Math.random() < 0.3 && sentences[i].length > 15) {
+        const words = sentences[i].split(' ');
+        const filler = fillers[Math.floor(Math.random() * fillers.length)];
+        const pos = Math.min(2, words.length - 1);
+        words.splice(pos, 0, filler);
+        sentences[i] = words.join(' ');
+        inserted = true;
+        modifications++;
+      }
+    }
+    response = sentences.join(' ');
+  }
+  // Final refinement using Gemini
+  const original = response;
+// ... all modification logic
+if (response === original) {
+  return response; // skip Gemini call
+}
+  const refined = await refineWithGemini(response);
+  return refined;
+}
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
     console.log(`Processing message for User: ${userId}, Session: ${sessionId}`);
@@ -219,16 +297,19 @@ ${userProfile.onboardingSummary}
         contextWithMemories,
         customPrompt
       );
-      let finalResponse = response;
+      let processedResponse = response;
       if (containsAITerm(response)) {
       console.log('AI identifying terms found in response. Refining...');
-      finalResponse = await refineResponse(response);
-      console.log(`Refined Response: ${finalResponse}`);
+      processedResponse = await refineResponse(response);
+      console.log(`Refined Response: ${processedResponse}`);
       } else {
       console.log('No AI identifying terms found in response.');
       }
 
-      console.log(`Generated Response: ${finalResponse}`);
+      // Apply humanization regardless of whether AI terms were found
+      console.log('Applying human-like modifications...');
+      const finalResponse = await humanizeResponse(processedResponse);
+      console.log(`Humanized Response: ${finalResponse}`);
 
       // Add AI response to context
       sessionMemory.chat_context.push({
