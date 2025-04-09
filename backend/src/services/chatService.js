@@ -62,14 +62,14 @@ function containsAITerm(text) {
   }
 
   const lowerCaseText = text.toLowerCase();
-  const foundKeyword = AI_IDENTIFYING_KEYWORDS.find(keyword =>
-    lowerCaseText.includes(keyword)
-  );
-
-  return {
-    found: !!foundKeyword,
-    keyword: foundKeyword || null,
-  };
+  for (const keyword of AI_IDENTIFYING_KEYWORDS) {
+    // Create a regex to match the whole word
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(lowerCaseText)) {
+      return { found: true, keyword };
+    }
+  }
+  return { found: false, keyword: null };
 }
 async function refineResponse(originalResponse) {
   try {
@@ -312,6 +312,7 @@ ${userProfile.onboardingSummary}
         customPrompt
       );
       let processedResponse = response;
+      console.log(`initial Response: ${response}`);
       const check = containsAITerm(response);
       if (check.found) {
       console.log(`AI identifying term "${check.keyword}" found in response. Refining...`);
