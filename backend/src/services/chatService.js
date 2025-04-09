@@ -179,8 +179,10 @@ export class ChatService {
     console.log(`Message Content: ${message || 'EMPTY (Auto Welcome)'}`);
 
     try {
+      console.log(message);
       // Get session context
-      if(message=='1236') await MemoryService.deleteUserProfile(userId);
+      if(message=='1236') {await MemoryService.deleteUserProfile(userId); 
+      console.log('delete session cleared');}
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
       let isFirstInteraction = false;
       let isOnboarding = false;
