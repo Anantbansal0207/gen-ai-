@@ -40,7 +40,7 @@ function shouldIncludeNameInContext(sessionMemory, userName) {
   if (!userName) return false;
   
   // Only include name in roughly 15% of messages
-  const randomChance = Math.random() < 0.15;
+  const randomChance = Math.random() < 0.5;
   
   // Count recent messages to avoid consecutive name usage
   const recentMessages = sessionMemory.chat_context
@@ -58,10 +58,18 @@ function shouldIncludeNameInContext(sessionMemory, userName) {
 }
 function containsAITerm(text) {
   if (!text) {
-      return false;
+    return { found: false, keyword: null };
   }
+
   const lowerCaseText = text.toLowerCase();
-  return AI_IDENTIFYING_KEYWORDS.some(keyword => lowerCaseText.includes(keyword));
+  const foundKeyword = AI_IDENTIFYING_KEYWORDS.find(keyword =>
+    lowerCaseText.includes(keyword)
+  );
+
+  return {
+    found: !!foundKeyword,
+    keyword: foundKeyword || null,
+  };
 }
 async function refineResponse(originalResponse) {
   try {
@@ -101,8 +109,10 @@ ${text}`;
 async function humanizeResponse(response) {
   let modifications = 0;
   const MAX_MODIFICATIONS = 2;
+  let fillerAdded = false; // Track if filler insertion occurred
+
   // Typo injection
-  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
+  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.3) {
     const words = response.split(' ');
     const idx = Math.floor(Math.random() * words.length);
     const word = words[idx];
@@ -121,8 +131,9 @@ async function humanizeResponse(response) {
       modifications++;
     }
   }
+
   // Punctuation change
-  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
+  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.3) {
     response = response.replace(/\.\s+([A-Z])/g, (_, p1) => {
       if (Math.random() < 0.4) {
         return ', and ' + p1.toLowerCase();
@@ -131,8 +142,9 @@ async function humanizeResponse(response) {
     });
     modifications++;
   }
+
   // Filler insertion
-  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
+  if (modifications < MAX_MODIFICATIONS && Math.random() < 0.3) {
     const fillers = ['like', 'um', 'you know', 'I mean', 'actually'];
     const sentences = response.split(/(?<=[.!?])\s+/);
     let inserted = false;
@@ -146,19 +158,21 @@ async function humanizeResponse(response) {
         sentences[i] = words.join(' ');
         inserted = true;
         modifications++;
+        fillerAdded = true;
       }
     }
     response = sentences.join(' ');
   }
-  // Final refinement using Gemini
-  const original = response;
-// ... all modification logic
-if (response === original) {
-  return response; // skip Gemini call
+
+  // Only call Gemini refinement if filler word was added.
+  if (fillerAdded) {
+    const refined = await refineWithGemini(response);
+    return refined;
+  } else {
+    return response;
+  }
 }
-  const refined = await refineWithGemini(response);
-  return refined;
-}
+
 export class ChatService {
   static async processMessage(userId, sessionId, message) {
     console.log(`Processing message for User: ${userId}, Session: ${sessionId}`);
@@ -298,13 +312,15 @@ ${userProfile.onboardingSummary}
         customPrompt
       );
       let processedResponse = response;
-      if (containsAITerm(response)) {
-      console.log('AI identifying terms found in response. Refining...');
+      const check = containsAITerm(response);
+      if (check.found) {
+      console.log(`AI identifying term "${check.keyword}" found in response. Refining...`);
       processedResponse = await refineResponse(response);
       console.log(`Refined Response: ${processedResponse}`);
       } else {
       console.log('No AI identifying terms found in response.');
       }
+
 
       // Apply humanization regardless of whether AI terms were found
       console.log('Applying human-like modifications...');
