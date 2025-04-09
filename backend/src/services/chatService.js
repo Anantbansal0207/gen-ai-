@@ -180,7 +180,7 @@ export class ChatService {
 
     try {
       // Get session context
-      if(message=='1236') await MemoryService.deleteSessionMemory(userId);
+      if(message=='1236') await MemoryService.deleteUserProfile(userId);
       let sessionMemory = await MemoryService.getSessionMemory(sessionId);
       let isFirstInteraction = false;
       let isOnboarding = false;
