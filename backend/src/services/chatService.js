@@ -258,7 +258,7 @@ export class ChatService {
       if (userName) {
         const shouldIncludeName = shouldIncludeNameInContext(sessionMemory, userName);
         
-        const userInfo = `[CRITICAL CLIENT INFORMATION ]
+        let userInfo = `[CRITICAL CLIENT INFORMATION ]
 The client's name is: ${userName}. Use their name some times (30 percent) in your responses.`;
 if (shouldIncludeName) {
   userInfo += ` Use their name once in your response in a natural way.`;
