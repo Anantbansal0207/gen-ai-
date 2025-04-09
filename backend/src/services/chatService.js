@@ -478,9 +478,10 @@ ${userProfile.onboardingSummary}
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
     const summaryPrompt = `
-    Based on this conversation with ${userName}, create a concise summary (150-200 words) of key information learned during their initial therapy sessions. 
+    Based on this conversation with him, create a concise summary (150-200 words) of key information learned during their initial therapy sessions. 
     
     IMPORTANT: Make sure to explicitly include the following information if mentioned:
+    1.Dont include name here
     1. Their age (exact number if mentioned)
     2. Their occupation/profession
     3. Their likely gender based on context and name (do not speculate if unclear)
@@ -493,7 +494,7 @@ ${userProfile.onboardingSummary}
     Format as a professional clinical summary that captures essential context for future therapeutic conversations.
     The first sentence should specifically summarize demographic information (age, gender, occupation).
     
-    Example first sentence: "${userName} is a 32-year-old female software engineer who is experiencing work-related stress."
+    Example first sentence: He is a 32-year-old female software engineer who is experiencing work-related stress."
     `;
     
     // Filter to just the conversation parts (not system messages)
