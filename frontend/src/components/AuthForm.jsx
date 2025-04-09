@@ -3,6 +3,12 @@ import { initiateSignUp, completeSignUp, signIn, initiatePasswordReset, complete
 import { useToast } from '../hooks/useToast';
 import { validateEmail } from '../utils/validation';
 
+import bg from '../assets/signUpBg.jpg';
+
+// Import background image
+// Note: You'll need to ensure this image is properly imported in your project
+// import bg from '../path/to/your/background/image.jpg';
+
 const AuthForm = ({ onAuthSuccess }) => {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
@@ -23,9 +29,6 @@ const AuthForm = ({ onAuthSuccess }) => {
       queryParams.get('token') ||
       sessionStorage.getItem('recoveryToken') ||
       window.location.hash.split('access_token=')[1]?.split('&')[0];
-
-    // Check if this is a recovery flow
-    // const type = queryParams.get('type') || hashParams.get('type');
 
     if (token) {
       setResetToken(token);
@@ -92,7 +95,7 @@ const AuthForm = ({ onAuthSuccess }) => {
             return;
           }
           try {
-            await completePasswordReset( newPassword);
+            await completePasswordReset(newPassword);
             showSuccess('Password reset successful!');
             setMode('signin');
             // Clear the recovery token from storage
@@ -119,177 +122,155 @@ const AuthForm = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[600px] rounded-lg overflow-hidden shadow-2xl">
-      {/* Form Section - Moved to top on mobile */}
-      <div className="w-full md:w-1/2 bg-background p-6 md:p-12 order-1 md:order-2">
-        <div className="max-w-md mx-auto">
-          <h3 className="text-2xl font-bold text-primary mb-8">
-            {mode === 'signin' ? 'Sign In' : 
-             mode === 'signup' ? 'Create Account' :
-             mode === 'verify' ? 'Verify Email' :
-             mode === 'forgot' ? 'Reset Password' :
-             'Set New Password'}
-          </h3>
+    <div className="flex items-center justify-center min-h-screen bg-cover bg-center" style={{ 
+      margin:'0px',
+      padding:'0px',
+      backgroundImage: `url(${bg})`, 
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }}>
+      <div style={{margin:'0px',padding:'0px'}} className="w-full max-w-md px-6">
+        <div className="backdrop-blur-sm bg-white/20 rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-800">
+              {mode === 'signin' ? 'Welcome to' : 
+               mode === 'signup' ? 'Join' :
+               mode === 'verify' ? 'Verify Email' :
+               mode === 'forgot' ? 'Reset Password' :
+               'Set New Password'}
+            </h2>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              {mode !== 'verify' && mode !== 'forgot' && mode !== 'reset' && "AI Therapist"}
+            </h1>
+            <p className="text-slate-600">
+              {mode === 'signin' ? 'Supporting your mental wellness' : 
+               mode === 'signup' ? 'Start your wellness journey' :
+               mode === 'verify' ? 'Check your email for the verification code' :
+               mode === 'forgot' ? 'We\'ll send recovery instructions to your email' :
+               'Create a new secure password'}
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Form fields remain the same */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             {(mode !== 'reset') && (
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required={mode !== 'reset'}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Email"
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
                 />
               </div>
             )}
 
             {['signin', 'signup'].includes(mode) && (
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">Password</label>
+              <div className="relative">
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Password"
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
                 />
+                <div className="absolute inset-y-0 right-3 flex items-center">
+                  <svg className="h-5 w-5 text-teal-600 opacity-70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 13.5C12.8284 13.5 13.5 12.8284 13.5 12C13.5 11.1716 12.8284 10.5 12 10.5C11.1716 10.5 10.5 11.1716 10.5 12C10.5 12.8284 11.1716 13.5 12 13.5Z" fill="currentColor"/>
+                    <path d="M21.8 11.9C18.3 5.9 5.7 5.9 2.2 11.9C2.07 12.12 2 12.38 2 12.65C2 12.91 2.07 13.17 2.2 13.4C5.7 19.4 18.3 19.4 21.8 13.4C21.93 13.17 22 12.91 22 12.65C22 12.38 21.93 12.12 21.8 11.9Z" fill="currentColor"/>
+                  </svg>
+                </div>
               </div>
             )}
 
             {mode === 'verify' && (
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">Verification Code</label>
                 <input
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   required
                   maxLength={6}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Verification Code"
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
                 />
               </div>
             )}
 
             {mode === 'reset' && (
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">New Password</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="New Password"
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
                 />
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full py-3 px-4 border border-transparent rounded-md text-background bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
             >
-              {mode === 'signin' ? 'Sign In' :
-               mode === 'signup' ? 'Sign Up' :
+              {mode === 'signin' ? 'Log in' :
+               mode === 'signup' ? 'Sign up' :
                mode === 'verify' ? 'Verify Email' :
                mode === 'forgot' ? 'Send Reset Instructions' :
                'Reset Password'}
             </button>
 
-            <div className="flex justify-center space-x-4 text-sm">
+            <div className="text-center text-sm mt-6">
               {mode === 'signin' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setMode('signup')}
-                    className="text-primary hover:text-primary-hover"
+                <div className="flex flex-col space-y-3">
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMode('forgot');
+                    }}
+                    className="text-teal-700 hover:text-teal-900"
                   >
-                    Create Account
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode('forgot')}
-                    className="text-primary hover:text-primary-hover"
-                  >
-                    Forgot Password?
-                  </button>
-                </>
+                    Forgot password?
+                  </a>
+                  <div className="flex items-center justify-center space-x-1 mt-4">
+                    <span className="text-slate-600">Don't have an account?</span>
+                    <a 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setMode('signup');
+                      }}
+                      className="text-teal-700 hover:text-teal-900 font-medium"
+                    >
+                      Sign up
+                    </a>
+                  </div>
+                </div>
               )}
+              
               {['signup', 'verify', 'forgot', 'reset'].includes(mode) && (
-                <button
-                  type="button"
-                  onClick={handleBackToSignIn}
-                  className="text-primary hover:text-primary-hover"
-                >
-                  Back to Sign In
-                </button>
+                <div className="flex items-center justify-center mt-4">
+                  <span className="text-slate-600">Already have an account?</span>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleBackToSignIn();
+                    }}
+                    className="text-teal-700 hover:text-teal-900 font-medium ml-1"
+                  >
+                    Log in
+                  </a>
+                </div>
               )}
             </div>
           </form>
         </div>
-      </div>
-
-      {/* Welcome Section - Moved to bottom on mobile */}
-      <div className="w-full md:w-1/2 bg-primary p-6 md:p-12 order-2 md:order-1">
-        {mode === 'signup' ? (
-          <>
-            <h2 className="text-3xl md:text-4xl font-bold text-background mb-6">
-              Your Demo Will Include:
-            </h2>
-            <ul className="space-y-4 text-background">
-              <li className="flex items-center">
-                <svg className="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>A complete walkthrough – Learn how to track Ethereum wallets, analyze token holders, and monitor whale portfolios.</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Q&A session – Get direct answers from our experts on how to maximize insights from wallet tracking and token analytics.</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Interactive discussion – Tell us about your needs, and we'll show you how our platform can help you stay ahead in the crypto market.</span>
-              </li>
-            </ul>
-          </>
-        ) : (
-          <>
-            <h2 className="text-3xl md:text-4xl font-bold text-background mb-6">
-              Welcome to Wallet Monitor
-            </h2>
-            <p className="text-background text-lg mb-8">
-              Track Ethereum wallet transactions, analyze tokens, and monitor your digital assets in real-time.
-            </p>
-            <ul className="space-y-4 text-background">
-              <li className="flex items-center">
-                <svg className="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Real-time transaction monitoring</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Token analysis and insights</span>
-              </li>
-              <li className="flex items-center">
-                <svg className="w-6 h-6 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Instant notifications</span>
-              </li>
-            </ul>
-          </>
-        )}
       </div>
     </div>
   );

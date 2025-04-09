@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import therapist from '../assets/therapist.jpg';
 import background from '../assets/bg4.jpg';
+import video from '../assets/video.mp4';
 
 const HomePage = ({ onGetStarted }) => {
   const [calmMode, setCalmMode] = useState(false);
