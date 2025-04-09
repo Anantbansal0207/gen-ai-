@@ -6,7 +6,8 @@ import { useNudge } from '../hooks/useNudge';
 import { useMoodTracker } from '../hooks/useMoodTracker';
 import LoadingDots from './LoadingDots';
 import FloatingLeaf from './FloatingLeaf';
-import mountains from '../assets/chatInterfaceImage.jpg';
+// import mountains from '../assets/chatInterfaceImage.jpg';
+import mountains from '../assets/bg3.jpg';
 
 const ChatInterface = ({ user: propUser }) => {
   const { showSuccess, showError } = useToast();
