@@ -1,6 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+// Import your sound file
+import sound from '../assets/sound.mp3';
+import sound2 from '../assets/sound2.mp3';
+
+const SoundToggle = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    // Create audio element
+    const audio = new Audio(sound2);
+    audioRef.current = audio;
+    
+    // Configure audio
+    audio.loop = true;
+    audio.volume = 0.5;
+
+    // Check if user had a preference from before
+    const savedPreference = localStorage.getItem('soundEnabled');
+    if (savedPreference === 'true') {
+      setIsPlaying(true);
+      audio.play().catch(error => {
+        console.error("Audio playback failed:", error);
+        setIsPlaying(false);
+      });
+    }
+
+    // Cleanup function
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, []);
+
+  const toggleSound = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(error => {
+        console.error("Audio playback failed:", error);
+      });
+    }
+    setIsPlaying(!isPlaying);
+    localStorage.setItem('soundEnabled', !isPlaying);
+  };
+
+  return (
+    <button
+      onClick={toggleSound}
+      className="p-2 rounded-md text-primary hover:bg-cream focus:outline-none transition-colors duration-200"
+      aria-label={isPlaying ? "Mute sound" : "Enable sound"}
+      title={isPlaying ? "Mute sound" : "Enable sound"}
+    >
+      {isPlaying ? (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+      ) : (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+      )}
+    </button>
+  );
+};
 
 const Navbar = ({ user, onLogout, navLinks }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -54,11 +122,13 @@ const Navbar = ({ user, onLogout, navLinks }) => {
               </Link>
             )}
             
+            <SoundToggle />
             <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center">
+            <SoundToggle />
             <ThemeToggle />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
