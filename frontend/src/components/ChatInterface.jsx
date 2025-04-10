@@ -73,78 +73,78 @@ const ChatInterface = ({ user: propUser }) => {
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-cover bg-center overflow-hidden" 
+    <div className="fixed inset-0 flex items-center justify-center bg-cover bg-center overflow-hidden" 
          style={{ backgroundImage: `url(${mountains})` }}>
       <FloatingLeaf className="text-teal-400/40" />
       <FloatingLeaf className="text-teal-500/40" />
       <FloatingLeaf className="text-teal-600/40" />
       
-      {/* Main Container - Responsive */}
-      <div className="flex flex-row w-full h-full max-w-7xl max-h-screen md:max-h-[90vh] rounded-xl shadow-2xl overflow-hidden m-2">
+      {/* Main Container - Perfectly Centered */}
+      <div className="flex flex-row w-full max-w-7xl h-[75vh] rounded-xl shadow-2xl overflow-hidden mx-4">
         {/* Left Section - Static */}
         <div className="w-64 md:w-72 bg-white/10 backdrop-blur-lg border-r border-white/10 flex-shrink-0">
-          <div className="h-full flex flex-col p-3 md:p-4">
+          <div className="h-full flex flex-col p-2 md:p-3">
             {/* Logo and Title */}
-            <div className="flex flex-col items-center mb-4">
-              <div className="w-8 h-8 md:w-10 md:h-10 mb-1">
+            <div className="flex flex-col items-center mb-3">
+              <div className="w-8 h-8 mb-1">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 3L4 15h16L12 3z" stroke="currentColor" strokeWidth="2" className="text-green-600"/>
                   <rect x="11" y="14" width="2" height="7" fill="currentColor" className="text-green-600"/>
                 </svg>
               </div>
-              <h3 className="text-base md:text-lg font-semibold text-gray-700">Mood & Sentiment Tracker</h3>
+              <h3 className="text-base font-semibold text-gray-700">Mood & Sentiment Tracker</h3>
             </div>
 
             {/* Mood Selection */}
-            <div className="flex justify-around mb-4">
+            <div className="flex justify-around mb-3">
               <button
                 onClick={() => trackMood('positive')}
-                className={`p-2 rounded-full transition-all ${
+                className={`p-1 rounded-full transition-all ${
                   selectedMood === 'positive' 
                     ? 'bg-white/50 scale-110' 
                     : 'bg-white/30 hover:bg-white/40'
                 }`}
               >
-                <span className="text-lg md:text-xl">😊</span>
+                <span className="text-lg">😊</span>
               </button>
               <button
                 onClick={() => trackMood('neutral')}
-                className={`p-2 rounded-full transition-all ${
+                className={`p-1 rounded-full transition-all ${
                   selectedMood === 'neutral' 
                     ? 'bg-white/50 scale-110' 
                     : 'bg-white/30 hover:bg-white/40'
                 }`}
               >
-                <span className="text-lg md:text-xl">😐</span>
+                <span className="text-lg">😐</span>
               </button>
               <button
                 onClick={() => trackMood('negative')}
-                className={`p-2 rounded-full transition-all ${
+                className={`p-1 rounded-full transition-all ${
                   selectedMood === 'negative' 
                     ? 'bg-white/50 scale-110' 
                     : 'bg-white/30 hover:bg-white/40'
                 }`}
               >
-                <span className="text-lg md:text-xl">😔</span>
+                <span className="text-lg">😔</span>
               </button>
             </div>
 
             {/* Calming Quote */}
-            <div className="bg-white/10 rounded-xl p-3 mb-4">
-              <h4 className="text-xs md:text-sm font-medium text-gray-600 mb-1">Calming Quote of Day</h4>
-              <p className="text-xs md:text-sm text-gray-700 italic">
+            <div className="bg-white/10 rounded-xl p-2 mb-3">
+              <h4 className="text-xs font-medium text-gray-600 mb-1">Calming Quote of Day</h4>
+              <p className="text-xs text-gray-700 italic">
                 "Peace comes from within. Do not seek it without."
               </p>
             </div>
 
             {/* Session History */}
             <div className="flex-grow overflow-y-auto">
-              <h4 className="text-xs md:text-sm font-medium text-gray-600 mb-2">SESSION HISTORY</h4>
-              <div className="space-y-2">
+              <h4 className="text-xs font-medium text-gray-600 mb-1">SESSION HISTORY</h4>
+              <div className="space-y-1">
                 {['Today', 'Yesterday', 'Last Week'].map((period, index) => (
                   <button
                     key={index}
-                    className="w-full text-left px-3 py-1 rounded-lg bg-white/10 text-gray-600 hover:bg-white/20 transition-colors text-xs md:text-sm"
+                    className="w-full text-left px-2 py-1 rounded-lg bg-white/10 text-gray-600 hover:bg-white/20 transition-colors text-xs"
                   >
                     {period}
                   </button>
@@ -156,7 +156,7 @@ const ChatInterface = ({ user: propUser }) => {
             <button
               onClick={handleFullRefresh}
               disabled={!currentUser || !sessionId}
-              className="w-full px-3 py-2 rounded-lg bg-white/20 text-gray-700 hover:bg-white/30 transition-colors disabled:opacity-50 mt-3 text-xs md:text-sm"
+              className="w-full px-2 py-1 rounded-lg bg-white/20 text-gray-700 hover:bg-white/30 transition-colors disabled:opacity-50 mt-2 text-xs"
             >
               New Session
             </button>
@@ -166,22 +166,22 @@ const ChatInterface = ({ user: propUser }) => {
         {/* Chat Section - Scrollable */}
         <div className="flex-1 flex flex-col backdrop-blur-sm min-w-0">
           {/* Chat Header */}
-          <div className="bg-white/20 p-3 border-b border-white/20">
-            <h2 className="text-base md:text-lg font-semibold text-gray-700">Mindful Chat</h2>
+          <div className="bg-white/20 p-2 border-b border-white/20">
+            <h2 className="text-base font-semibold text-gray-700">Mindful Chat</h2>
           </div>
 
           {/* Messages Area - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-2 md:p-3 space-y-2">
             {messages.map((message, index) => (
               <div
                 key={`${message.sender}-${message.timestamp}-${index}`}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl p-2 md:p-3 ${
+                  className={`max-w-[80%] rounded-2xl p-2 ${
                     message.sender === 'user'
-                      ? 'bg-white/60 ml-4 md:ml-8'
-                      : 'bg-white/40 mr-4 md:mr-8'
+                      ? 'bg-white/60 ml-4'
+                      : 'bg-white/40 mr-4'
                   }`}
                 >
                   <p className="text-gray-700 whitespace-pre-wrap text-sm">{message.text}</p>
@@ -196,7 +196,7 @@ const ChatInterface = ({ user: propUser }) => {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-white/40 rounded-2xl p-2 md:p-3">
+                <div className="bg-white/40 rounded-2xl p-2">
                   <LoadingDots />
                 </div>
               </div>
@@ -205,13 +205,13 @@ const ChatInterface = ({ user: propUser }) => {
           </div>
 
           {/* Quick Response Buttons */}
-          <div className="bg-white/20 px-3 py-2 flex gap-2 justify-center flex-wrap">
+          <div className="bg-white/20 px-2 py-1 flex gap-1 justify-center flex-wrap">
             {!messages.length ? (
               ['I\'m feeling anxious', 'I need someone to talk to'].map((text, index) => (
                 <button
                   key={index}
                   onClick={() => handleSend(text)}
-                  className="px-2 py-1 rounded-full bg-white/40 text-gray-700 hover:bg-white/50 transition-all text-xs md:text-sm"
+                  className="px-2 py-1 rounded-full bg-white/40 text-gray-700 hover:bg-white/50 transition-all text-xs"
                 >
                   {text}
                 </button>
@@ -221,7 +221,7 @@ const ChatInterface = ({ user: propUser }) => {
                 <button
                   key={index}
                   onClick={() => handleSend(text)}
-                  className="px-2 py-1 rounded-full bg-white/40 text-gray-700 hover:bg-white/50 transition-all text-xs md:text-sm"
+                  className="px-2 py-1 rounded-full bg-white/40 text-gray-700 hover:bg-white/50 transition-all text-xs"
                 >
                   {text}
                 </button>
@@ -230,7 +230,7 @@ const ChatInterface = ({ user: propUser }) => {
           </div>
 
           {/* Input Area */}
-          <div className="p-3 bg-white/20">
+          <div className="p-2 bg-white/20">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -238,13 +238,13 @@ const ChatInterface = ({ user: propUser }) => {
                 onChange={handleInputChange}
                 onKeyPress={(e) => e.key === 'Enter' && !isTyping && !isSendingNudge && handleSend()}
                 placeholder="Message..."
-                className="flex-1 px-3 py-2 rounded-full bg-white/50 placeholder-gray-500 text-gray-700 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                className="flex-1 px-3 py-1 rounded-full bg-white/50 placeholder-gray-500 text-gray-700 focus:outline-none focus:ring-1 focus:ring-white/50 text-sm"
                 disabled={!currentUser || !sessionId || isTyping || isSendingNudge}
               />
               <button
                 onClick={() => handleSend()}
                 disabled={isTyping || !currentUser || !sessionId || !input.trim() || isSendingNudge}
-                className="p-2 rounded-full bg-white/50 text-gray-700 hover:bg-white/60 transition-all disabled:opacity-50"
+                className="p-1 rounded-full bg-white/50 text-gray-700 hover:bg-white/60 transition-all disabled:opacity-50"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
