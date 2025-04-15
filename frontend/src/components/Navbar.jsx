@@ -78,7 +78,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
   const isCurrentPath = (path) => location.pathname === path;
 
   return (
-    <nav style={{position: 'sticky', top: 0, zIndex: 1000}} className="bg-background shadow-lg transition-colors duration-200 sticky top-0 z-50">
+    <nav style={{position: 'sticky', top: 0, zIndex: 1000}} className="bg-background/40 backdrop-blur-sm shadow-lg transition-colors duration-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -99,7 +99,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
                   isCurrentPath(link.path)
                     ? 'bg-primary text-cream'
-                    : 'text-primary hover:bg-cream transition-colors duration-200'
+                    : 'text-primary hover:bg-cream/70 transition-colors duration-200'
                 }`}
               >
                 {link.label}
@@ -132,7 +132,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
             <ThemeToggle />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="ml-2 p-2 rounded-md text-primary hover:bg-cream focus:outline-none"
+              className="ml-2 p-2 rounded-md text-primary hover:bg-cream/70 focus:outline-none"
             >
               <svg
                 className="h-6 w-6"
@@ -163,7 +163,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-background border-t border-cream/20">
+        <div className="md:hidden bg-background/90 backdrop-blur-sm border-t border-cream/20">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navLinks.map((link) => (
               <Link
@@ -172,7 +172,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
                   isCurrentPath(link.path)
                     ? 'bg-primary text-cream'
-                    : 'text-primary hover:bg-cream transition-colors duration-200'
+                    : 'text-primary hover:bg-cream/70 transition-colors duration-200'
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >

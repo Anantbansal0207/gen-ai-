@@ -5,10 +5,6 @@ import { validateEmail } from '../utils/validation';
 
 import bg from '../assets/signUpBg.jpg';
 
-// Import background image
-// Note: You'll need to ensure this image is properly imported in your project
-// import bg from '../path/to/your/background/image.jpg';
-
 const AuthForm = ({ onAuthSuccess }) => {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
@@ -122,14 +118,25 @@ const AuthForm = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center" style={{ 
-      margin:'0px',
-      padding:'0px',
-      backgroundImage: `url(${bg})`, 
-      backgroundSize: 'cover',
-      backgroundPosition: 'center'
-    }}>
-      <div style={{margin:'0px',padding:'0px'}} className="w-full max-w-md px-6">
+    <div 
+      className="flex items-center justify-center min-h-screen bg-cover bg-center"
+      style={{ 
+        backgroundImage: `url(${bg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }}
+    >
+      <div style={{marginTop:'60px'}} className="w-full max-w-md px-6">
         <div className="backdrop-blur-sm bg-white/20 rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-slate-800">
