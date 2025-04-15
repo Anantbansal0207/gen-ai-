@@ -1,24 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
-// Import your sound file
-import sound from '../assets/sound.mp3';
 import sound2 from '../assets/sound2.mp3';
 
+// Sound Toggle Component
 const SoundToggle = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
 
   useEffect(() => {
-    // Create audio element
     const audio = new Audio(sound2);
     audioRef.current = audio;
-    
-    // Configure audio
     audio.loop = true;
     audio.volume = 0.5;
 
-    // Check if user had a preference from before
     const savedPreference = localStorage.getItem('soundEnabled');
     if (savedPreference === 'true') {
       setIsPlaying(true);
@@ -28,7 +22,6 @@ const SoundToggle = () => {
       });
     }
 
-    // Cleanup function
     return () => {
       audio.pause();
       audio.src = '';
@@ -70,15 +63,21 @@ const SoundToggle = () => {
   );
 };
 
-const Navbar = ({ user, onLogout, navLinks }) => {
+// Navbar Component
+const Navbar = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const isCurrentPath = (path) => location.pathname === path;
 
+  const navLinks = [
+    { path: '/chat', label: 'Chat' },
+    { path: '/dream', label: 'Dream Interpreter' },
+  ];
+
   return (
-    <nav style={{position: 'sticky', top: 0, zIndex: 1000}} className="bg-background/40 backdrop-blur-sm shadow-lg transition-colors duration-200 sticky top-0 z-50">
+    <nav style={{ position: 'sticky', top: 0, zIndex: 1000 }} className="bg-background/40 backdrop-blur-sm shadow-lg transition-colors duration-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -105,7 +104,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
                 {link.label}
               </Link>
             ))}
-            
+
             {user ? (
               <button
                 onClick={onLogout}
@@ -121,15 +120,13 @@ const Navbar = ({ user, onLogout, navLinks }) => {
                 Sign In
               </Link>
             )}
-            
+
             <SoundToggle />
-            <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center">
             <SoundToggle />
-            <ThemeToggle />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="ml-2 p-2 rounded-md text-primary hover:bg-cream/70 focus:outline-none"
@@ -179,7 +176,7 @@ const Navbar = ({ user, onLogout, navLinks }) => {
                 {link.label}
               </Link>
             ))}
-            
+
             {user ? (
               <button
                 onClick={() => {
