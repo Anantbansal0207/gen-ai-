@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import therapist from '../assets/therapist.jpg';
 import background from '../assets/bg4.jpg';
 import video from '../assets/video.mp4';
+import VrmViewer from './VrmViewer'; // Import the VRM component
 
 const HomePage = ({ onGetStarted }) => {
   const [calmMode, setCalmMode] = useState(false);
@@ -67,14 +67,17 @@ const HomePage = ({ onGetStarted }) => {
                     </div>
                   </div>
                   
-                  {/* Right Side - Image */}
+                  {/* Right Side - VRM Model replacing Image */}
                   <div className="w-full md:w-1/2 mt-12 md:mt-0">
                     <div className="relative">
-                      <img 
-                        className="w-full h-auto rounded-lg shadow-lg object-cover" 
-                        src={therapist} 
-                        alt="Mindful Therapy" 
-                      />
+                      {/* Replace the img with VrmViewer component */}
+                      <div className="rounded-lg shadow-lg overflow-hidden">
+                        <VrmViewer 
+                          modelPath="/src/assets/model.vrm" 
+                          width="100%" 
+                          height="400px" 
+                        />
+                      </div>
                       <div className="absolute -bottom-4 -left-4 bg-white px-6 py-3 rounded-lg shadow-md hidden md:block">
                         <div className="flex items-center">
                           <div className="text-amber-400 text-xl mr-2">★★★★★</div>
@@ -200,38 +203,37 @@ const HomePage = ({ onGetStarted }) => {
         </div>
 
         {/* Testimonials Section */}
-{/* Testimonials Section */}
-<div style={{margin:'0px',padding:'0px', marginTop:'100px' ,marginBottom:'0px'}} className="w-full px-4 py-20">
-  <div className="max-w-6xl mx-auto">
-    <div className="bg-amber-50/30 backdrop-blur-sm rounded-xl p-12 shadow-lg">
-      <h2 style={{marginTop:'0',marginBottom:'32px'}} className="text-3xl font-bold text-accent text-center">
-        Stories of Growth
-      </h2>
-      
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <TestimonialCard
-          quote="The AI therapist helped me develop better coping mechanisms. It's like having a supportive friend available 24/7."
-          author="Sarah M."
-        />
-        <TestimonialCard
-          quote="I was skeptical at first, but the personalized guidance has made a real difference in my anxiety management."
-          author="James K."
-        />
-        <TestimonialCard
-          quote="The calm environment and thoughtful responses helped me open up about issues I've never discussed before."
-          author="Emily R."
-        />
-      </div>
-    </div>
-  </div>
-</div>
+        <div style={{margin:'0px',padding:'0px', marginTop:'100px' ,marginBottom:'0px'}} className="w-full px-4 py-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-amber-50/30 backdrop-blur-sm rounded-xl p-12 shadow-lg">
+              <h2 style={{marginTop:'0',marginBottom:'32px'}} className="text-3xl font-bold text-accent text-center">
+                Stories of Growth
+              </h2>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <TestimonialCard
+                  quote="The AI therapist helped me develop better coping mechanisms. It's like having a supportive friend available 24/7."
+                  author="Sarah M."
+                />
+                <TestimonialCard
+                  quote="I was skeptical at first, but the personalized guidance has made a real difference in my anxiety management."
+                  author="James K."
+                />
+                <TestimonialCard
+                  quote="The calm environment and thoughtful responses helped me open up about issues I've never discussed before."
+                  author="Emily R."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
-{/* Decorative transition element */}
-<div className="w-full flex justify-center -mt-6 mb-12">
-  <div className="relative">
-    
-  </div>
-</div>
+        {/* Decorative transition element */}
+        <div className="w-full flex justify-center -mt-6 mb-12">
+          <div className="relative">
+            
+          </div>
+        </div>
       </div>
     </div>
   );

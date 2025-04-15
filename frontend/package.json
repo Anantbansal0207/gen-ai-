@@ -13,6 +13,7 @@
     "@heroicons/react": "^2.0.18",
     "@lottiefiles/dotlottie-react": "^0.2.2",
     "@paddle/paddle-js": "^1.4.0",
+    "@pixiv/three-vrm": "^3.4.0",
     "@supabase/supabase-js": "^2.47.12",
     "axios": "^1.6.2",
     "body-parser": "^1.20.3",
@@ -29,6 +30,7 @@
     "react-router-dom": "^7.2.0",
     "react-snap": "^1.23.0",
     "resend": "^4.0.1",
+    "three": "^0.175.0",
     "web3": "^4.16.0"
   },
   "devDependencies": {
