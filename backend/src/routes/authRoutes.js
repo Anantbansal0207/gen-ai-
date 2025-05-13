@@ -74,9 +74,11 @@ router.post('/signup/complete', async (req, res) => {
       return res.status(400).json({ error: 'Email mismatch' });
     }
     
-    if (!verifyOTP(email, otp)) {
-      return res.status(400).json({ error: 'Invalid or expired verification code' });
-    }
+    const isValidOtp = await verifyOTP(email, otp);
+if (!isValidOtp) {
+  return res.status(400).json({ error: 'Invalid or expired verification code' });
+}
+
     
     const { data, error } = await supabase.auth.signUp({
       email: pendingSignup.email,
