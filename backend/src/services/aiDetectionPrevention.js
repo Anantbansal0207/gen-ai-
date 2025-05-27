@@ -7,11 +7,12 @@ const AI_IDENTIFYING_KEYWORDS = [
     'chatgpt', 'machine learning', 'neural network', 'deep learning', 
     'automated system', 'digital assistant', 'virtual assistant', 'algorithm', 
     'bot', 'human', 'artificial intelligence', 'gpt', 'transformer', 'model',
-    'training data', 'parameters', 'tokens', 'prompt', 'fine-tuned'
+    'training data', 'parameters', 'tokens', 'prompt', 'fine-tuned','{'
   ];
   
   // Technical/coding related keywords that a therapist wouldn't typically know
   const TECHNICAL_KEYWORDS = [
+    '{',
     'code', 'coding', 'programming', 'javascript', 'python', 'html', 'css',
     'react', 'node', 'api', 'database', 'sql', 'git', 'github', 'deployment',
     'server', 'backend', 'frontend', 'framework', 'library', 'syntax',
