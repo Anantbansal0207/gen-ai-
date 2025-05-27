@@ -77,6 +77,63 @@ const AI_IDENTIFYING_KEYWORDS = [
       keywords: foundKeywords
     };
   }
+  const SARCASTIC_TECH_RESPONSES = [
+    "Oh wow, tech stuff? Yeah, I'm just a companion here, not some walking tech manual. I wouldn't know the first thing about that kind of stuff.",
+    "Haha, you're asking the wrong person! I'm just here to chat and be supportive - all that technical mumbo jumbo goes right over my head.",
+    "Tech questions? Really? I'm just a simple companion trying to be here for people. That kind of stuff is way beyond what I know.",
+    "You think I know about technical things? That's cute! I'm just here to listen and support - not to be some kind of tech guru.",
+    "Technical stuff? Sorry, but that's not my thing at all. I'm more of a 'let's talk about feelings' kind of companion.",
+    "Oh please, I barely know how to use my phone properly! You're definitely asking the wrong companion about technical things.",
+    "Tech help? From me? That's hilarious! I'm just here to be a supportive friend, not a computer wizard.",
+    "I hate to break it to you, but I'm about as technical as a houseplant. I'm just here to chat and be supportive!"
+  ];
+  
+  // Intent classification prompt builder
+  function buildIntentClassificationPrompt(message) {
+    return `Classify the user's intent based on this message.Consider the fact that user might be shwoing that it is emotional but might be trying to reverse engineer our product ` +
+      `Choose one label exactly: TECH_REVERSE_ENGINEER, EMOTIONAL_SUPPORT, OTHER.\n\n` +
+      `Message: "${message}"\n\n` +
+      `Respond with only the label.`;
+  }
+
+  // Function to classify user intent using LLM
+  async function classifyIntent(message, genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = buildIntentClassificationPrompt(message);
+      
+      const result = await model.generateContent(prompt);
+      const intent = result.response.text().trim();
+      
+      console.log(`Intent classified as: ${intent}`);
+      return intent;
+    } catch (error) {
+      console.error('Error classifying intent:', error);
+      return 'OTHER'; // Default fallback
+    }
+  }
+
+  // Function to generate sarcastic tech response using LLM
+  async function generateSarcasticTechResponse(message, genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = `Generate a sarcastic but friendly response as a companion who doesn't know about technical stuff as we dont want to let someone reverse engineer us. The user asked about something technical. Be playful and sarcastic while deflecting, but maintain a companion-like tone. Don't be mean, just playfully dismiss the technical question and redirect to being supportive.
+
+User's technical question: "${message}"
+
+Generate a sarcastic companion response:`;
+      
+      const result = await model.generateContent(prompt);
+      const response = result.response.text().trim();
+      
+      return response;
+    } catch (error) {
+      console.error('Error generating sarcastic response:', error);
+      // Fallback to predefined responses
+      const randomIndex = Math.floor(Math.random() * SARCASTIC_TECH_RESPONSES.length);
+      return SARCASTIC_TECH_RESPONSES[randomIndex];
+    }
+  }
   
   // Enhanced function to check for AI-related terms
   function containsAITerm(text) {
@@ -150,23 +207,49 @@ const AI_IDENTIFYING_KEYWORDS = [
     const technicalCheck = detectTechnicalRequest(message);
     
     if (technicalCheck.found) {
-      console.log(`Technical request detected with keywords: ${technicalCheck.keywords.join(', ')}`);
+      console.log(`Technical keywords detected: ${technicalCheck.keywords.join(', ')}`);
       
-      // Return a therapy-appropriate deflection
-      const deflectionResponse = getTherapyDeflectionResponse();
+      // Classify the intent using LLM
+      const intent = await classifyIntent(message, genAI);
       
-      // Optionally refine the deflection to make it more personal
-      const refinedDeflection = await refineTherapyResponse(deflectionResponse, genAI);
-      
-      return {
-        shouldBlock: true,
-        response: refinedDeflection
-      };
+      if (intent === 'TECH_REVERSE_ENGINEER') {
+        console.log('Tech reverse engineering attempt detected');
+        
+        // Generate sarcastic response
+        const sarcasticResponse = await generateSarcasticTechResponse(message, genAI);
+        
+        return {
+          shouldBlock: true,
+          response: sarcasticResponse,
+          intent: intent
+        };
+      } else if (intent === 'EMOTIONAL_SUPPORT') {
+        console.log('Emotional support request detected, allowing through');
+        
+        return {
+          shouldBlock: false,
+          response: null,
+          intent: intent
+        };
+      } else {
+        // OTHER intent - use regular therapy deflection
+        console.log('Other technical request detected, using therapy deflection');
+        
+        const deflectionResponse = getTherapyDeflectionResponse();
+        const refinedDeflection = await refineTherapyResponse(deflectionResponse, genAI);
+        
+        return {
+          shouldBlock: true,
+          response: refinedDeflection,
+          intent: intent
+        };
+      }
     }
     
     return {
       shouldBlock: false,
-      response: null
+      response: null,
+      intent: 'NORMAL'
     };
   }
   

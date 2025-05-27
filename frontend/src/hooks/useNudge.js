@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { sendNudgeMessage } from '../services/chatService';
 
 // Constants
-const MIN_INACTIVITY_TIMEOUT_MS = 15000;
+const MIN_INACTIVITY_TIMEOUT_MS = 25000;
 const MAX_INACTIVITY_TIMEOUT_MS = 35000;
 const UPPER_RANGE_PROBABILITY = 0.75;
 const NUDGE_BUFFER_MS = MIN_INACTIVITY_TIMEOUT_MS * 0.9;
