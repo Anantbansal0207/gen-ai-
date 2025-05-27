@@ -9,43 +9,40 @@ const sendWelcomeEmail = async (email) => {
 
     // Initialize Resend with the API key from config
     const resend = new Resend(config.resend.apiKey);
-    
-    const subject = 'Welcome to XRYPTT!';
+
+    const subject = 'Welcome to LUMAYA!';
     const content = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #333;">Welcome to XRYPTT!</h1>
-        <p>Thank you for joining us. Your account has been successfully created.</p>
+        <h1 style="color: #333;">Welcome to Lumaya 🌿</h1>
+        <p>We're so glad you're here. Your account has been successfully created.</p>
         
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h2 style="color: #333; margin-top: 0;">About Us</h2>
-          <p>We aim to provide transparency and clarity in the cryptocurrency market by offering advanced tools that bridge the gap between complex blockchain data and actionable insights. Our mission is to enable every user to stay ahead in the crypto space, track key market players, and uncover trends that drive significant investment opportunities.</p>
+          <h2 style="color: #333; margin-top: 0;">About Lumaya</h2>
+          <p>At Lumaya, we believe that mental health support should be accessible, consistent, and stigma-free. Our AI-powered chat companion offers a safe space to express yourself, reflect, and feel heard — anytime you need it. While we don't replace real therapy, we aim to bridge the gap by offering emotional support and helpful conversation in moments where professional help isn’t immediately available.</p>
         </div>
         
-        <h2 style="color: #333;">What We Offer</h2>
+        <h2 style="color: #333;">What You Can Expect</h2>
         <ul style="list-style-type: none; padding: 0;">
           <li style="margin-bottom: 10px;">
-            <strong>💼 Wallet Tracking</strong>
-            <p>Monitor up to six wallets with real-time updates</p>
+            <strong>💬 Thoughtful Conversations</strong>
+            <p>Talk freely with an AI that listens, responds with empathy, and adapts to your emotional tone</p>
           </li>
           <li style="margin-bottom: 10px;">
-            <strong>📊 Portfolio Insights</strong>
-            <p>Access detailed portfolios of token holders</p>
+            <strong>🧭 Emotional Guidance</strong>
+            <p>Receive gentle nudges and questions to help you explore what you’re feeling and why</p>
           </li>
           <li style="margin-bottom: 10px;">
-            <strong>🐋 Whale Tracking</strong>
-            <p>Identify and track market-moving players</p>
-          </li>
-          <li style="margin-bottom: 10px;">
-            <strong>🔒 Privacy Features</strong>
-            <p>Advanced privacy settings for your transactions</p>
+            <strong>🔐 Your Privacy Matters</strong>
+            <p>Your conversations are private and secure — always</p>
           </li>
         </ul>
         
-        <p>We're excited to have you on board!</p>
-        <p>- The XRYPTT Team</p>
+        <p>Thank you for trusting Lumaya. We're here for you, one message at a time.</p>
+        <p>- The Lumaya Team</p>
       </div>
     `;
-    
+
+
     // Send the email
     await resend.emails.send({
       from: 'XRYPTT <wallettracker@tixflip.in>',
@@ -70,7 +67,7 @@ Timestamp: ${txn.timestamp}`;
   if (txn.tokenData) {
     // Parse token data
     const tokenInfo = JSON.parse(txn.tokenData);
-    
+
     if (tokenInfo.method === 'transfer') {
       return `${commonDetails}
 Type: Token Transfer
@@ -98,7 +95,7 @@ Amount: ${txn.amount} ETH`;
 // Format HTML for a single transaction
 const formatTransactionHTML = (txn) => {
   const tokenInfo = txn.tokenData ? JSON.parse(txn.tokenData) : null;
-  
+
   const commonHTML = `
     <li><strong>Hash:</strong> ${txn.hash}</li>
     <li><strong>From:</strong> ${txn.from}</li>
@@ -146,7 +143,7 @@ const sendVerificationEmail = async (email, otp) => {
     await resend.emails.send({
       from: 'Wallet Monitor <wallettracker@tixflip.in>',
       to: email,
-      subject: 'Email Verification - Wallet Monitor',
+      subject: 'Verify Your Email – Welcome to Lumaya',
       html: `
         <h1>Verify Your Email</h1>
         <p>Your verification code is: <strong>${otp}</strong></p>
@@ -240,4 +237,4 @@ ${transactionDetails}
 };
 
 // Export functions
-export { formatTransactionDetails,sendVerificationEmail, sendEmailNotification,sendTrackingStartedEmail,sendWelcomeEmail };
+export { formatTransactionDetails, sendVerificationEmail, sendEmailNotification, sendTrackingStartedEmail, sendWelcomeEmail };
