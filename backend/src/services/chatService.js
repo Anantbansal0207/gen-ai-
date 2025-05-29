@@ -140,7 +140,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
             autoUnblockIn: '24 hours',
             blockExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           };
-        }y
+        }
         
         // Handle technical requests
         if (preprocessResult.shouldBlock) {
