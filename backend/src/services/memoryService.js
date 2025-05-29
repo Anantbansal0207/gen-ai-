@@ -18,6 +18,12 @@ const index = pinecone.index(config.pinecone.index);
 
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+const REDIS_KEYS = {
+  SOS_BLOCKED_USERS: 'sos:blocked:users',
+  USER_CRISIS_STATUS: 'crisis:status:user',
+  SESSION_MEMORY: 'chat_session',
+  USER_PROFILE: 'user'
+};
 
 export class MemoryService {
   // Short-term memory management (Redis)
