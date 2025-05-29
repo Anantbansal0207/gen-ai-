@@ -32,7 +32,7 @@ function shouldIncludeNameInContext(sessionMemory, userName) {
   if (!userName) return false;
   
   // Only include name in roughly 15% of messages
-  const randomChance = Math.random() < 0.5;
+  const randomChance = Math.random() < 0.2;
   
   // Count recent messages to avoid consecutive name usage
   const recentMessages = sessionMemory.chat_context
