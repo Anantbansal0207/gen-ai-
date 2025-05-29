@@ -1,4 +1,4 @@
-// Enhanced ChatService with improved AI detection prevention
+// Enhanced ChatService with improved AI detection prevention and SOS crisis handling
 import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
 import fetch from 'node-fetch';
@@ -49,16 +49,100 @@ function shouldIncludeNameInContext(sessionMemory, userName) {
   return randomChance && !nameUsedRecently;
 }
 
-
 export class ChatService {
+  /**
+   * Process user message with Redis-based crisis blocking
+   */
   static async processMessage(userId, sessionId, message) {
-    console.log(`Processing message for User: ${userId}, Session: ${sessionId}`);
-    console.log(`Message Content: ${message || 'EMPTY (Auto Welcome)'}`);
+    console.log(`📨 Processing message for User: ${userId}, Session: ${sessionId}`);
+    console.log(`💬 Message Content: ${message || 'EMPTY (Auto Welcome)'}`);
 
     try {
-      // FIRST: Check if this is a technical request and handle it immediately
+      // Check if user is blocked due to SOS crisis (from Redis with auto-expiration)
+      const blockedStatus = await MemoryService.isUserBlocked(userId);
+      
+      if (blockedStatus) {
+        console.log(`🚫 User ${userId} is blocked due to previous SOS crisis`);
+        
+        // Get crisis details for context
+        const crisisStatus = await MemoryService.getUserCrisisStatus(userId);
+        
+        const blockedResponse = `I'm still concerned about your wellbeing. Please contact the crisis resources I shared earlier:
+
+• National Suicide Prevention Lifeline: 988
+• Crisis Text Line: Text HOME to 741741
+• Emergency Services: 911
+
+Your safety is the priority right now. Please reach out to professional crisis counselors.
+
+🕒 This restriction will automatically lift in ${Math.ceil(blockedStatus.timeRemaining / 3600)} hours.`;
+
+        return {
+          response: blockedResponse,
+          context: [],
+          userBlocked: true,
+          blockReason: 'SOS_CRISIS_CONTINUED',
+          crisisTimestamp: crisisStatus?.crisisTimestamp,
+          timeRemaining: blockedStatus.timeRemaining,
+          expiresAt: blockedStatus.expiresAt
+        };
+      }
+
+      // FIRST: Check if this is a technical request or SOS situation and handle it immediately
       if (message && message.trim() !== '') {
         const preprocessResult = await preprocessUserMessage(message, genAI);
+        
+        // Handle SOS situations with user blocking
+        if (preprocessResult.intent === 'SELF_HARM_INTENT') {
+          console.log('🚨 SOS Crisis detected - blocking user in Redis with 24-hour auto-expiration');
+          
+          // Mark user in crisis using MemoryService (automatically sets Redis expiration)
+          const crisisInfo = await MemoryService.markUserInCrisis(userId, {
+            message: message,
+            sessionId: sessionId,
+            detectedKeywords: preprocessResult.keywords || []
+          });
+          
+          // Save the SOS interaction to session memory
+          let sessionMemory = await MemoryService.getSessionMemory(sessionId);
+          if (!sessionMemory || !sessionMemory.chat_context) {
+            sessionMemory = {
+              session_id: sessionId,
+              user_id: userId,
+              chat_context: []
+            };
+          }
+          
+          // Add user message and crisis response to context
+          const updatedContext = [
+            ...((sessionMemory.chat_context) || []),
+            {
+              role: 'user',
+              content: message,
+              timestamp: new Date().toISOString()
+            },
+            {
+              role: 'assistant',
+              content: preprocessResult.response,
+              timestamp: new Date().toISOString(),
+              type: 'crisis_response'
+            }
+          ];
+          
+          await MemoryService.saveSessionMemory(sessionId, userId, updatedContext);
+          
+          return {
+            response: preprocessResult.response,
+            context: updatedContext,
+            userBlocked: true,
+            blockReason: 'SOS_CRISIS',
+            crisisInfo: crisisInfo,
+            autoUnblockIn: '24 hours',
+            blockExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          };
+        }y
+        
+        // Handle technical requests
         if (preprocessResult.shouldBlock) {
           console.log('Technical request blocked - returning therapy deflection');
           
@@ -325,8 +409,7 @@ export class ChatService {
       throw new Error('Failed to process chat message due to an internal server error.');
     }
   }
-
-  // Rest of your existing methods remain the same...
+  // Existing helper methods
   static formatContextFromMemories(memories) {
     console.log(`Formatting Context from ${memories ? memories.length : 0} Memories`);
     
@@ -407,6 +490,120 @@ export class ChatService {
     } catch (error) {
       console.error('Error generating onboarding summary:', error);
       return `${userName} - Basic information captured during onboarding.`;
+    }
+  }
+  //Not very importan for now
+    static async adminUnblockUser(userId, adminId) {
+    try {
+      console.log(`👤 Admin ${adminId} attempting to unblock user ${userId}`);
+      
+      const result = await MemoryService.unblockUser(userId, adminId);
+      
+      if (result.success) {
+        console.log(`✅ Admin unblock successful for user ${userId}`);
+        return {
+          success: true,
+          message: `User ${userId} has been successfully unblocked by admin ${adminId}`,
+          unblockTimestamp: new Date().toISOString(),
+          previousBlockInfo: result.previousBlockInfo
+        };
+      } else {
+        console.log(`⚠️ Admin unblock failed for user ${userId}: ${result.message}`);
+        return {
+          success: false,
+          message: result.message,
+          userId: userId,
+          adminId: adminId
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error in admin unblock operation:', error);
+      return {
+        success: false,
+        message: 'An error occurred while attempting to unblock the user',
+        error: error.message,
+        userId: userId,
+        adminId: adminId
+      };
+    }
+  }
+    static async getBlockedUsersDetails() {
+    try {
+      const blockedUsers = await MemoryService.getAllBlockedUsers();
+      
+      // Get additional details for each blocked user
+      const detailedUsers = await Promise.all(
+        blockedUsers.map(async (user) => {
+          const crisisStatus = await MemoryService.getUserCrisisStatus(user.userId);
+          const userProfile = await MemoryService.getUserProfile(user.userId);
+          
+          return {
+            ...user,
+            crisisDetails: crisisStatus,
+            hasProfile: !!userProfile,
+            formattedTimeRemaining: this.formatTimeRemaining(user.timeRemaining)
+          };
+        })
+      );
+
+      return {
+        success: true,
+        totalBlocked: blockedUsers.length,
+        users: detailedUsers,
+        retrievedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Error getting blocked users details:', error);
+      return {
+        success: false,
+        error: error.message,
+        users: []
+      };
+    }
+  }
+
+  /**
+   * Check if a specific user is currently blocked
+   */
+  static async checkUserBlockStatus(userId) {
+    try {
+      const blockStatus = await MemoryService.isUserBlocked(userId);
+      const crisisStatus = await MemoryService.getUserCrisisStatus(userId);
+      
+      return {
+        userId,
+        isBlocked: !!blockStatus,
+        blockInfo: blockStatus,
+        crisisInfo: crisisStatus,
+        checkedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`❌ Error checking block status for user ${userId}:`, error);
+      return {
+        userId,
+        isBlocked: false,
+        error: error.message,
+        checkedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Utility function to format time remaining in human-readable format
+   */
+  static formatTimeRemaining(seconds) {
+    if (seconds <= 0) return 'Expired';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
     }
   }
 }
