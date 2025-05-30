@@ -58,14 +58,12 @@ export class ChatService {
     console.log(`💬 Message Content: ${message || 'EMPTY (Auto Welcome)'}`);
 
     try {
-      // Check if user is blocked due to SOS crisis (from Redis with auto-expiration)
-      const blockedStatus = await MemoryService.isUserBlocked(userId);
+      // Use batched Redis calls to get all user data at once
+      const { blocked: blockedStatus, crisis: crisisStatus, sessionMemory: initialSessionMemory, userProfile } = 
+        await MemoryService.getBatchUserData(userId, sessionId);
       
       if (blockedStatus) {
         console.log(`🚫 User ${userId} is blocked due to previous SOS crisis`);
-        
-        // Get crisis details for context
-        const crisisStatus = await MemoryService.getUserCrisisStatus(userId);
         
         const blockedResponse = `I'm still concerned about your wellbeing. Please contact the crisis resources I shared earlier:
 
@@ -103,8 +101,8 @@ Your safety is the priority right now. Please reach out to professional crisis c
             detectedKeywords: preprocessResult.keywords || []
           });
           
-          // Save the SOS interaction to session memory
-          let sessionMemory = await MemoryService.getSessionMemory(sessionId);
+          // Use the session memory from batch call or create new one
+          let sessionMemory = initialSessionMemory;
           if (!sessionMemory || !sessionMemory.chat_context) {
             sessionMemory = {
               session_id: sessionId,
@@ -146,8 +144,8 @@ Your safety is the priority right now. Please reach out to professional crisis c
         if (preprocessResult.shouldBlock) {
           console.log('Technical request blocked - returning therapy deflection');
           
-          // Still save this interaction to memory but mark it as deflected
-          let sessionMemory = await MemoryService.getSessionMemory(sessionId);
+          // Use the session memory from batch call or create new one
+          let sessionMemory = initialSessionMemory;
           if (!sessionMemory || !sessionMemory.chat_context) {
             sessionMemory = {
               session_id: sessionId,
@@ -176,22 +174,19 @@ Your safety is the priority right now. Please reach out to professional crisis c
       }
 
       console.log(message);
-      // Get session context
+      // Get session context using batched data
       if(message=='1236') {
         await MemoryService.deleteUserProfile(userId); 
         console.log('delete session cleared');
       }
       
-      let sessionMemory = await MemoryService.getSessionMemory(sessionId);
+      let sessionMemory = initialSessionMemory;
       let isFirstInteraction = false;
       let isOnboarding = false;
       let isWelcomeBack = false;
       let isAutoWelcome = !message || message.trim() === '';
       let customPrompt = BASE_THERAPIST_PROMPT;
       let userName = null;
-
-      // Get user profile data if it exists
-      const userProfile = await MemoryService.getUserProfile(userId);
 
       // Check if this is a brand new user with no history
       if (!sessionMemory || !sessionMemory.chat_context) {

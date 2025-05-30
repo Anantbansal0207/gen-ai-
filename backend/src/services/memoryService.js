@@ -26,6 +26,27 @@ const REDIS_KEYS = {
 };
 
 export class MemoryService {
+  // Add this to your MemoryService class
+static async getBatchUserData(userId, sessionId) {
+  const pipeline = redis.pipeline();
+  pipeline.get(`user:blocked:${userId}`);
+  pipeline.get(`session:${sessionId}`);
+  pipeline.get(`user:profile:${userId}`);
+  
+  const results = await pipeline.exec();
+  
+  const blocked = results[0][1] ? JSON.parse(results[0][1]) : null;
+  const sessionMemory = results[1][1] ? JSON.parse(results[1][1]) : null;
+  const userProfile = results[2][1] ? JSON.parse(results[2][1]) : null;
+  
+  let crisis = null;
+  if (blocked) {
+    crisis = await redis.get(`user:crisis:${userId}`);
+    crisis = crisis ? JSON.parse(crisis) : null;
+  }
+  
+  return { blocked, crisis, sessionMemory, userProfile };
+}
   // Short-term memory management (Redis)
   static async saveSessionMemory(sessionId, userId, context) {
     try {
