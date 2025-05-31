@@ -284,27 +284,41 @@ const ChatInterface = ({ user: propUser }) => {
           {/* Messages Area - Scrollable */}
           <div className="flex-1 overflow-y-auto p-2 md:p-3 space-y-2">
             {messages.map((message, index) => (
-              <div
-                key={`${message.sender}-${message.timestamp}-${index}`}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl p-2 ${
-                    message.sender === 'user'
-                      ? 'bg-white/60 ml-4'
-                      : 'bg-white/40 mr-4'
-                  }`}
-                >
-                  <p className="text-gray-700 whitespace-pre-wrap text-sm">{message.text}</p>
-                  <span className="text-xs text-gray-500 mt-1 block text-right">
-                    {new Date(message.timestamp).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </span>
-                </div>
-              </div>
-            ))}
+  <div
+    key={`${message.sender}-${message.timestamp}-${index}`}
+    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+  >
+    <div
+      className={`max-w-[80%] rounded-2xl p-2 ${
+        message.sender === 'user'
+          ? 'bg-white/60 ml-4'
+          : message.type === 'blocking'
+          ? 'bg-red-100/80 border border-red-300/50 mr-4'
+          : 'bg-white/40 mr-4'
+      }`}
+    >
+      {message.type === 'blocking' && (
+        <div className="flex items-center mb-1">
+          <svg className="w-4 h-4 text-red-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <span className="text-xs font-medium text-red-700">Safety Notice</span>
+        </div>
+      )}
+      <p className={`whitespace-pre-wrap text-sm ${
+        message.type === 'blocking' ? 'text-red-700' : 'text-gray-700'
+      }`}>{message.text}</p>
+      <span className={`text-xs mt-1 block text-right ${
+        message.type === 'blocking' ? 'text-red-500' : 'text-gray-500'
+      }`}>
+        {new Date(message.timestamp).toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}
+      </span>
+    </div>
+  </div>
+))}
             
             {/* Typing Animation - Show either loading dots or typing message */}
 {(isTyping || isAnimatingTyping) && (

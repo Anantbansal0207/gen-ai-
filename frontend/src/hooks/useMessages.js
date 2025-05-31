@@ -26,7 +26,7 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
   }, []);
 
   // Updated simulateTyping function with dynamic buffer time
-  const simulateTyping = useCallback(async (fullMessage, messageId, requestStartTime = null) => {
+  const simulateTyping = useCallback(async (fullMessage, messageId, requestStartTime = null, isBlockingMessage = false) => {
     const characters = fullMessage.split('');
     const millisecondsPerCharacter = calculateTypingSpeed();
     
@@ -91,10 +91,15 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
       text: fullMessage,
       sender: 'ai',
       timestamp: new Date().toISOString(),
-      id: messageId
+      id: messageId,
+      type: isBlockingMessage ? 'blocking' : 'normal' // Add type to identify blocking messages
     };
     
     setMessages(prev => [...prev, finalMessage]);
+    
+    // Return a promise that resolves when the message is fully displayed
+    // This allows the caller to wait for the message to be shown before blocking
+    return new Promise(resolve => setTimeout(resolve, 100));
   }, [sessionId, calculateTypingSpeed]);
 
   // Cleanup timeouts
@@ -202,6 +207,10 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
         
         // Handle potential blocking from welcome message
         if (responseData.userBlocked) {
+          // First, display the blocking message as a chat message
+          await simulateTyping(responseData.response, messageId, requestStartTime, true);
+          
+          // Then set the block status
           setIsUserBlocked(true);
           setBlockInfo({
             blockReason: responseData.blockReason,
@@ -209,7 +218,6 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
             crisisInfo: responseData.crisisInfo,
             autoUnblockIn: responseData.autoUnblockIn
           });
-          setIsTyping(false);
         } else {
           // Start typing animation with request start time
           await simulateTyping(responseData.response, messageId, requestStartTime);
@@ -267,6 +275,10 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
         
         // Handle user blocking
         if (responseData.userBlocked) {
+          // First, display the blocking message as a chat message
+          await simulateTyping(responseData.response, messageId, requestStartTime, true);
+          
+          // Then set the block status
           setIsUserBlocked(true);
           setBlockInfo({
             blockReason: responseData.blockReason,
@@ -276,7 +288,7 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
             timeRemaining: responseData.timeRemaining
           });
           
-          setIsTyping(false);
+          // Show error message (optional - you might want to remove this since the message is now in chat)
           showError(`Access temporarily restricted. ${responseData.autoUnblockIn ? `Will be restored in ${responseData.autoUnblockIn}.` : 'Please contact support if this continues.'}`);
         } else {
           // Start typing animation for AI response with request start time
