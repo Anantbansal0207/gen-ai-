@@ -32,7 +32,9 @@ const ChatInterface = ({ user: propUser }) => {
     clearMessages,
     isUserBlocked,
     blockInfo,
-    checkBlockExpiry
+    checkBlockExpiry,
+    typingMessage,
+    isAnimatingTyping
   } = useMessages(sessionId, currentUser, hasInitialized, setHasInitialized, () => {}, showError);
   
   const { isSendingNudge, startInactivityTimer, clearInactivityTimer } = useNudge(
@@ -50,7 +52,7 @@ const ChatInterface = ({ user: propUser }) => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage) {
       if (lastMessage.sender === 'ai' && lastMessage.type !== 'nudge') {
-        if (!isSendingNudge && !isUserBlocked) {
+        if (!isSendingNudge && !isUserBlocked && !isAnimatingTyping) {
           startInactivityTimer();
         } else {
           clearInactivityTimer();
@@ -67,7 +69,7 @@ const ChatInterface = ({ user: propUser }) => {
     return () => {
       clearInactivityTimer();
     };
-  }, [messages, sessionId, isSendingNudge, isUserBlocked, startInactivityTimer, clearInactivityTimer]);
+  }, [messages, sessionId, isSendingNudge, isUserBlocked, isAnimatingTyping, startInactivityTimer, clearInactivityTimer]);
 
   // Check for block expiry with precise timeout
   React.useEffect(() => {
@@ -303,13 +305,34 @@ const ChatInterface = ({ user: propUser }) => {
                 </div>
               </div>
             ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-white/40 rounded-2xl p-2">
-                  <LoadingDots />
-                </div>
-              </div>
-            )}
+            
+            {/* Typing Animation - Show either loading dots or typing message */}
+{(isTyping || isAnimatingTyping) && (
+  <div className="flex justify-start">
+    <div className="max-w-[80%] bg-white/40 rounded-2xl p-2 mr-4">
+      {isTyping && !isAnimatingTyping ? (
+        <LoadingDots />
+      ) : isAnimatingTyping && typingMessage ? (
+        <>
+          <p className="text-gray-700 whitespace-pre-wrap text-sm">
+            {typingMessage}
+            <span className="inline-block w-0.5 h-4 bg-gray-600 ml-0.5" style={{
+              animation: 'blink 1s infinite'
+            }}></span>
+          </p>
+          <style jsx>{`
+            @keyframes blink {
+              0%, 50% { opacity: 1; }
+              51%, 100% { opacity: 0; }
+            }
+          `}</style>
+        </>
+      ) : (
+        <LoadingDots />
+      )}
+    </div>
+  </div>
+)}
             <div ref={messagesEndRef} />
           </div>
 

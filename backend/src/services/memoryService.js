@@ -26,12 +26,12 @@ const REDIS_KEYS = {
 };
 
 export class MemoryService {
-  // Add this to your MemoryService class
+  // Fixed: Now using consistent Redis keys for all data types
 static async getBatchUserData(userId, sessionId) {
   const pipeline = redis.pipeline();
-  pipeline.get(`user:blocked:${userId}`);
-  pipeline.get(`session:${sessionId}`);
-  pipeline.get(`user:profile:${userId}`);
+  pipeline.get(`${REDIS_KEYS.SOS_BLOCKED_USERS}:${userId}`); // Fixed: use correct blocked key
+  pipeline.get(`chat_session:${sessionId}`); // Fixed: was `session:${sessionId}`
+  pipeline.get(`user:${userId}:profile`); // Fixed: match saveUserProfile format
   
   const results = await pipeline.exec();
   
@@ -41,7 +41,7 @@ static async getBatchUserData(userId, sessionId) {
   
   let crisis = null;
   if (blocked) {
-    crisis = await redis.get(`user:crisis:${userId}`);
+    crisis = await redis.get(`${REDIS_KEYS.USER_CRISIS_STATUS}:${userId}`); // Fixed: use correct crisis key
     crisis = crisis ? JSON.parse(crisis) : null;
   }
   
@@ -436,4 +436,3 @@ ${conversationText}
     }
   }
 }
-
