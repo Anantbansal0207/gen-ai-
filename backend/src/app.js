@@ -11,6 +11,8 @@ import sitemapRouter from './routes/sitemap.js';
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import chatRoutes from './routes/chatRoutes.js';
+import { CacheService } from './services/cacheService.js';
+
 
 dotenv.config();
 await initializeConfig();
@@ -128,3 +130,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
   gracefulShutdown('unhandledRejection');
 });
+setInterval(() => {
+  const cleanedCount = CacheService.cleanupExpired();
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`);
+  }
+}, 60 * 60 * 1000); // 1 hour

@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import TopicAnalyzer from './topicAnalyzer.js';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { CacheService } from './cacheService.js';
 import { config, initializeConfig } from '../config/index.js';
 import { 
   BASE_THERAPIST_PROMPT,
@@ -58,12 +59,38 @@ export class ChatService {
     console.log(`💬 Message Content: ${message || 'EMPTY (Auto Welcome)'}`);
 
     try {
-      // Use batched Redis calls to get all user data at once
-      const { blocked: blockedStatus, crisis: crisisStatus, sessionMemory: initialSessionMemory, userProfile } = 
-        await MemoryService.getBatchUserData(userId, sessionId);
-      
+      // Step 1: Try to get data from cache first
+      let cachedData = CacheService.getUserData(userId, sessionId);
+      let blockedStatus, crisisStatus, sessionMemory, userProfile;
+
+      if (cachedData) {
+        // Use cached data
+        ({ blocked: blockedStatus, crisis: crisisStatus, sessionMemory, userProfile } = cachedData);
+        console.log(`📦 Using cached data for user ${userId}`);
+      } else {
+        // Cache miss - fetch from Redis
+        console.log(`🔍 Cache miss - fetching from Redis for user ${userId}`);
+        const batchData = await MemoryService.getBatchUserData(userId, sessionId);
+        blockedStatus = batchData.blocked;
+        crisisStatus = batchData.crisis;
+        sessionMemory = batchData.sessionMemory;
+        userProfile = batchData.userProfile;
+        
+        // Cache the fetched data
+        CacheService.setUserData(userId, sessionId, {
+          blocked: blockedStatus,
+          crisis: crisisStatus,
+          sessionMemory,
+          userProfile
+        });
+      }
+
+      // Step 2: Handle blocked users (and invalidate cache if blocked)
       if (blockedStatus) {
         console.log(`🚫 User ${userId} is blocked due to previous SOS crisis`);
+        
+        // Invalidate cache since user is blocked
+        CacheService.invalidateCrisisStatus(userId);
         
         const blockedResponse = `I'm still concerned about your wellbeing. Please contact the crisis resources I shared earlier:
 
@@ -86,34 +113,36 @@ Your safety is the priority right now. Please reach out to professional crisis c
         };
       }
 
-      // FIRST: Check if this is a technical request or SOS situation and handle it immediately
+      // Step 3: Check for SOS/Technical requests
       if (message && message.trim() !== '') {
         const preprocessResult = await preprocessUserMessage(message, genAI);
         
-        // Handle SOS situations with user blocking
+        // Handle SOS situations
         if (preprocessResult.intent === 'SELF_HARM_INTENT') {
-          console.log('🚨 SOS Crisis detected - blocking user in Redis with 24-hour auto-expiration');
+          console.log('🚨 SOS Crisis detected - invalidating cache and blocking user');
           
-          // Mark user in crisis using MemoryService (automatically sets Redis expiration)
+          // Invalidate cache immediately when crisis is detected
+          CacheService.invalidateCrisisStatus(userId);
+          
+          // Mark user in crisis
           const crisisInfo = await MemoryService.markUserInCrisis(userId, {
             message: message,
             sessionId: sessionId,
             detectedKeywords: preprocessResult.keywords || []
           });
           
-          // Use the session memory from batch call or create new one
-          let sessionMemory = initialSessionMemory;
-          if (!sessionMemory || !sessionMemory.chat_context) {
-            sessionMemory = {
+          // Continue with existing SOS logic...
+          let currentSessionMemory = sessionMemory;
+          if (!currentSessionMemory || !currentSessionMemory.chat_context) {
+            currentSessionMemory = {
               session_id: sessionId,
               user_id: userId,
               chat_context: []
             };
           }
           
-          // Add user message and crisis response to context
           const updatedContext = [
-            ...((sessionMemory.chat_context) || []),
+            ...((currentSessionMemory.chat_context) || []),
             {
               role: 'user',
               content: message,
@@ -144,43 +173,48 @@ Your safety is the priority right now. Please reach out to professional crisis c
         if (preprocessResult.shouldBlock) {
           console.log('Technical request blocked - returning therapy deflection');
           
-          // Use the session memory from batch call or create new one
-          let sessionMemory = initialSessionMemory;
-          if (!sessionMemory || !sessionMemory.chat_context) {
-            sessionMemory = {
+          let currentSessionMemory = sessionMemory;
+          if (!currentSessionMemory || !currentSessionMemory.chat_context) {
+            currentSessionMemory = {
               session_id: sessionId,
               user_id: userId,
               chat_context: []
             };
           }
           
-          sessionMemory.chat_context.push({
+          currentSessionMemory.chat_context.push({
             role: 'user',
             content: message
           });
           
-          sessionMemory.chat_context.push({
+          currentSessionMemory.chat_context.push({
             role: 'assistant',
             content: preprocessResult.response
           });
           
-          await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
+          // Update both Redis and cache
+          await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
+          CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
           
           return {
             response: preprocessResult.response,
-            context: sessionMemory.chat_context
+            context: currentSessionMemory.chat_context
           };
         }
       }
 
+      // Step 4: Continue with normal conversation flow
       console.log(message);
-      // Get session context using batched data
+      
+      // Handle debug deletion
       if(message=='1236') {
         await MemoryService.deleteUserProfile(userId); 
+        CacheService.invalidateUserProfile(userId); // Invalidate cache
         console.log('delete session cleared');
       }
       
-      let sessionMemory = initialSessionMemory;
+      // Continue with existing logic using sessionMemory and userProfile from cache/fetch
+      let currentSessionMemory = sessionMemory;
       let isFirstInteraction = false;
       let isOnboarding = false;
       let isWelcomeBack = false;
@@ -189,15 +223,18 @@ Your safety is the priority right now. Please reach out to professional crisis c
       let userName = null;
 
       // Check if this is a brand new user with no history
-      if (!sessionMemory || !sessionMemory.chat_context) {
+      if (!currentSessionMemory || !currentSessionMemory.chat_context) {
         console.log(`Creating new session memory for Session: ${sessionId}`);
-        sessionMemory = {
+        currentSessionMemory = {
           session_id: sessionId,
           user_id: userId,
           chat_context: []
         };
       }
         
+      // Continue with existing conversation logic...
+      // [Include all your existing logic for first interaction, onboarding, etc.]
+      
       // If user has no profile, this is the first interaction ever
       if (!userProfile || !userProfile.name) {
         isFirstInteraction = true;
@@ -227,14 +264,16 @@ Your safety is the priority right now. Please reach out to professional crisis c
       }
 
       // Only add user message to context if it's not an auto welcome
-      sessionMemory.chat_context.push({
-        role: 'user',
-        content: message
-      });
+      if (!isAutoWelcome) {
+        currentSessionMemory.chat_context.push({
+          role: 'user',
+          content: message
+        });
+      }
 
-      console.log(`Current Chat Context Length: ${sessionMemory.chat_context.length}`);
+      console.log(`Current Chat Context Length: ${currentSessionMemory.chat_context.length}`);
 
-      // Query memory for context
+      // Continue with existing memory querying and response generation...
       let relevantMemories = [];
       let relevantContext = '';
       
@@ -246,7 +285,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
       }
 
       // Build context with memories and user profile
-      let contextWithMemories = [...sessionMemory.chat_context];
+      let contextWithMemories = [...currentSessionMemory.chat_context];
       if (relevantContext) {
         console.log(`Adding Relevant Memory Context: ${relevantContext}`);
         contextWithMemories.unshift({
@@ -257,7 +296,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
 
       // Enhanced user profile handling
       if (userName) {
-        const shouldIncludeName = shouldIncludeNameInContext(sessionMemory, userName);
+        const shouldIncludeName = shouldIncludeNameInContext(currentSessionMemory, userName);
       
         let userInfo = '';
         let profileSummary = '';
@@ -284,7 +323,6 @@ Your safety is the priority right now. Please reach out to professional crisis c
           console.log(`Excluding name usage for this response`);
           userInfo = `[CRITICAL CLIENT INFORMATION]
       DO NOT use their name in this response.`;
-          // profileSummary remains empty
         }
       
         contextWithMemories.unshift({
@@ -292,7 +330,6 @@ Your safety is the priority right now. Please reach out to professional crisis c
           content: userInfo + profileSummary
         });
       }
-      
 
       // Generate response
       console.log(`Generating response...`);
@@ -323,7 +360,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
       console.log(`Humanized Response: ${finalResponse}`);
 
       // Add AI response to context
-      sessionMemory.chat_context.push({
+      currentSessionMemory.chat_context.push({
         role: 'assistant',
         content: finalResponse
       });
@@ -338,35 +375,47 @@ Your safety is the priority right now. Please reach out to professional crisis c
             onboardingComplete: false,
             firstSessionDate: new Date().toISOString()
           });
+          
+          // Invalidate cache when profile is updated
+          CacheService.invalidateUserProfile(userId);
           userName = extractedName;
         }
       }
       
       // Handle onboarding completion
-      if (isOnboarding && sessionMemory.chat_context.length >= 10) {
+      if (isOnboarding && currentSessionMemory.chat_context.length >= 10) {
         console.log(`Marking onboarding as complete for user ${userName}`);
-        const onboardingSummary = await this.generateOnboardingSummary(sessionMemory.chat_context, userName);
+        const onboardingSummary = await this.generateOnboardingSummary(currentSessionMemory.chat_context, userName);
         await MemoryService.updateUserProfile(userId, { 
           onboardingComplete: true,
           onboardingSummary: onboardingSummary
         });
+        
+        // Invalidate cache when profile is updated
+        CacheService.invalidateUserProfile(userId);
       }
 
-      // Save session memory
+      // Save session memory to Redis
       console.log(`Saving Session Memory for Session: ${sessionId}`);
-      await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
+      await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
+      
+      // Update cache with new session context
+      CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
 
       // Handle summarization for long conversations
-      if (sessionMemory.chat_context.length > 20 && !isAutoWelcome) {
+      if (currentSessionMemory.chat_context.length > 20 && !isAutoWelcome) {
         const isSummarizing = true;
         console.log(`Context length > 20, attempting summarization for Session: ${sessionId}`);
 
-        const summarizedContext = await MemoryService.summarizeConversation(sessionMemory.chat_context);
+        const summarizedContext = await MemoryService.summarizeConversation(currentSessionMemory.chat_context);
 
-        if (summarizedContext !== sessionMemory.chat_context) {
-          sessionMemory.chat_context = summarizedContext;
-          console.log(`Summarization complete. New context length: ${sessionMemory.chat_context.length}`);
-          await MemoryService.saveSessionMemory(sessionId, userId, sessionMemory.chat_context);
+        if (summarizedContext !== currentSessionMemory.chat_context) {
+          currentSessionMemory.chat_context = summarizedContext;
+          console.log(`Summarization complete. New context length: ${currentSessionMemory.chat_context.length}`);
+          
+          // Save and update cache with summarized context
+          await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
+          CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
 
           if (this.shouldSaveToLongTerm(isSummarizing, message, finalResponse)) {
             console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
@@ -388,7 +437,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
 
       return {
         response: finalResponse,
-        context: sessionMemory.chat_context
+        context: currentSessionMemory.chat_context
       };
       
     } catch (error) {
@@ -402,52 +451,6 @@ Your safety is the priority right now. Please reach out to professional crisis c
         errorStack: error.stack
       });
       throw new Error('Failed to process chat message due to an internal server error.');
-    }
-  }
-  // Existing helper methods
-  static formatContextFromMemories(memories) {
-    console.log(`Formatting Context from ${memories ? memories.length : 0} Memories`);
-    
-    if (!memories || memories.length === 0) {
-      return '';
-    }
-    
-    return memories
-      .map(memory => {
-        const content = memory.metadata.content || "Unknown content";
-        const topic = memory.metadata.topic || "general topic";
-        const mood = memory.metadata.mood || "neutral mood";
-        return `Previous interaction about ${topic}: ${content}: ${mood}`;
-      })
-      .join('\n');
-  }
-
-  static shouldSaveToLongTerm(isSummarizing, message, response) {
-    return isSummarizing;
-  }
-
-  static async extractUserName(userMessage, aiResponse) {
-    try {
-      if (!userMessage || userMessage.trim() === '') {
-        return null;
-      }
-      
-      const extractPrompt = `
-      Based on this conversation exchange, extract the user's name if they shared it.
-      Only return the name, nothing else. If no name is found, return "NULL".
-      
-      User message: "${userMessage}"
-      AI response: "${aiResponse}"
-      `;
-      
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(extractPrompt);
-      const extractedText = result.response.text().trim();
-      
-      return extractedText === "NULL" ? null : extractedText;
-    } catch (error) {
-      console.error('Error extracting user name:', error);
-      return null;
     }
   }
   

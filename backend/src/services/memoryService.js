@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config, initializeConfig } from '../config/index.js';
+import { CacheService } from './cacheService.js';
 
 // Ensure config is initialized before accessing environment variables
 await initializeConfig();
@@ -80,6 +81,42 @@ static async getBatchUserData(userId, sessionId) {
       return null;
     }
   }
+  static async saveUserProfile(userId, profileData) {
+    try {
+      const profileKey = `user:${userId}:profile`;
+      await redis.set(profileKey, JSON.stringify(profileData));
+      
+      // Invalidate cache when profile is saved
+      CacheService.invalidateUserProfile(userId);
+      console.log(`✅ User profile saved and cache invalidated for user ${userId}`);
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving user profile:', error);
+      return false;
+    }
+  }
+  
+  // Update updateUserProfile to invalidate cache
+  static async updateUserProfile(userId, updatedFields) {
+    try {
+      const currentProfile = await this.getUserProfile(userId) || {};
+      const updatedProfile = { ...currentProfile, ...updatedFields };
+      const result = await this.saveUserProfile(userId, updatedProfile);
+      
+      if (result) {
+        // Cache is already invalidated in saveUserProfile
+        console.log(`✅ User profile updated and cache invalidated for user ${userId}`);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return false;
+    }
+  }
+
+  // Update deleteUserProfile to invalidate cache
   static async deleteUserProfile(userId) {
     try {
       const profileKey = `user:${userId}:profile`;
@@ -94,34 +131,14 @@ static async getBatchUserData(userId, sessionId) {
       
       // Delete the user profile from Redis
       await redis.del(profileKey);
-      console.log(`✅ User profile deleted for user ID: ${userId}`);
+      
+      // Invalidate cache
+      CacheService.invalidateUserProfile(userId);
+      console.log(`✅ User profile deleted and cache invalidated for user ID: ${userId}`);
+      
       return true;
     } catch (error) {
       console.error('❌ Error deleting user profile:', error);
-      return false;
-    }
-  }
-  
-  // Save user profile data
-  static async saveUserProfile(userId, profileData) {
-    try {
-      const profileKey = `user:${userId}:profile`;
-      await redis.set(profileKey, JSON.stringify(profileData));
-      return true;
-    } catch (error) {
-      console.error('Error saving user profile:', error);
-      return false;
-    }
-  }
-  
-  // Update user profile data (merge with existing)
-  static async updateUserProfile(userId, updatedFields) {
-    try {
-      const currentProfile = await this.getUserProfile(userId) || {};
-      const updatedProfile = { ...currentProfile, ...updatedFields };
-      return await this.saveUserProfile(userId, updatedProfile);
-    } catch (error) {
-      console.error('Error updating user profile:', error);
       return false;
     }
   }
@@ -173,9 +190,12 @@ static async getBatchUserData(userId, sessionId) {
         redis.del(blockedKey)
       ]);
       
+      // Invalidate cache when user is unblocked
+      CacheService.invalidateCrisisStatus(userId);
+      
       const logMessage = adminId 
-        ? `✅ User ${userId} manually unblocked by admin ${adminId}` 
-        : `✅ User ${userId} manually unblocked`;
+        ? `✅ User ${userId} manually unblocked by admin ${adminId} and cache invalidated` 
+        : `✅ User ${userId} manually unblocked and cache invalidated`;
       
       console.log(logMessage);
       
@@ -189,7 +209,6 @@ static async getBatchUserData(userId, sessionId) {
       return { success: false, message: 'Error occurred while unblocking user', error: error.message };
     }
   }
-
   /**
    * Get all currently blocked users (admin function)
    */
@@ -361,7 +380,7 @@ ${conversationText}
       return []; // Return empty array if there's an error
     }
   }
-  static async markUserInCrisis(userId, crisisData) {
+   static async markUserInCrisis(userId, crisisData) {
     try {
       const crisisInfo = {
         userId,
@@ -385,14 +404,16 @@ ${conversationText}
         crisisTimestamp: crisisInfo.crisisTimestamp
       }));
 
-      console.log(`🚨 User ${userId} marked in crisis with 24-hour auto-removal`);
+      // Invalidate cache when user goes into crisis
+      CacheService.invalidateCrisisStatus(userId);
+      console.log(`🚨 User ${userId} marked in crisis with 24-hour auto-removal and cache invalidated`);
+      
       return crisisInfo;
     } catch (error) {
       console.error('❌ Error marking user in crisis:', error);
       throw error;
     }
   }
-
   /**
    * Get user crisis status from Redis
    */
