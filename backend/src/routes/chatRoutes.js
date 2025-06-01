@@ -3,7 +3,7 @@ import { ChatService } from '../services/chatService.js';
 import { NudgeService } from '../services/NudgeService.js';
 import { authenticate } from '../middlewares/authMiddleware.js';
 import { MemoryService } from '../services/memoryService.js';
-import { CacheService } from '..services/cacheService.js';
+import { CacheService } from '../services/cacheService.js';
 
 const router = express.Router();
 
