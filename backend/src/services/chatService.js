@@ -411,36 +411,50 @@ Your safety is the priority right now. Please reach out to professional crisis c
 
       // Handle summarization for long conversations
       if (currentSessionMemory.chat_context.length > 20 && !isAutoWelcome) {
-        const isSummarizing = true;
-        console.log(`Context length > 20, attempting summarization for Session: ${sessionId}`);
+  const isSummarizing = true;
+  console.log(`Context length > 20, attempting summarization for Session: ${sessionId}`);
 
-        const summarizedContext = await MemoryService.summarizeConversation(currentSessionMemory.chat_context);
+  const summarizedContext = await MemoryService.summarizeConversation(currentSessionMemory.chat_context);
 
-        if (summarizedContext !== currentSessionMemory.chat_context) {
-          currentSessionMemory.chat_context = summarizedContext;
-          console.log(`Summarization complete. New context length: ${currentSessionMemory.chat_context.length}`);
-          
-          // Save and update cache with summarized context
-          await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
-          CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
+  if (summarizedContext !== currentSessionMemory.chat_context) {
+    currentSessionMemory.chat_context = summarizedContext;
+    console.log(`Summarization complete. New context length: ${currentSessionMemory.chat_context.length}`);
+    
+    // Save and update cache with summarized context
+    await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
+    CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
 
-          if (this.shouldSaveToLongTerm(isSummarizing, message, finalResponse)) {
-            console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
-            const mood = await TopicAnalyzer.analyzeMood(message);
-            const topic = await TopicAnalyzer.analyzeTopic(message);
-            console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
-            await MemoryService.saveLongTermMemory(userId, {
-              content: message,
-              response: finalResponse,
-              type: 'summary_interaction',
-              mood: mood,
-              topic: topic
-            });
-          }
-        } else {
-          console.log(`Summarization skipped or failed for Session: ${sessionId}`);
-        }
-      }
+    if (this.shouldSaveToLongTerm(isSummarizing, message, finalResponse)) {
+      console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
+
+      // ─── Extract *only* the summary text (no “role:” prefixes) ───
+      // summarization always returned an array whose first element is:
+      //   { role: 'user', content: `Previous conversation summary: ${summary}` }
+      // so we strip off the “Previous conversation summary: ” prefix.
+      const fullSummaryEntry = summarizedContext[0].content; 
+      const prefix = 'Previous conversation summary: ';
+      const summaryText = fullSummaryEntry.startsWith(prefix)
+        ? fullSummaryEntry.slice(prefix.length)
+        : fullSummaryEntry;
+
+      // ─── Now run mood/topic analysis on just `summaryText` ───
+      const mood  = await TopicAnalyzer.analyzeMood(summaryText);
+      const topic = await TopicAnalyzer.analyzeTopic(summaryText);
+      console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
+
+      await MemoryService.saveLongTermMemory(userId, {
+        content: summaryText,    
+        response: finalResponse,
+        type: 'summary_interaction',
+        mood: mood,
+        topic: topic
+      });
+    }
+  } else {
+    console.log(`Summarization skipped or failed for Session: ${sessionId}`);
+  }
+}
+
 
       return {
         response: finalResponse,
@@ -458,6 +472,51 @@ Your safety is the priority right now. Please reach out to professional crisis c
         errorStack: error.stack
       });
       throw new Error('Failed to process chat message due to an internal server error.');
+    }
+  }
+  static formatContextFromMemories(memories) {
+    console.log(`Formatting Context from ${memories ? memories.length : 0} Memories`);
+
+    if (!memories || memories.length === 0) {
+      return '';
+    }
+
+    return memories
+      .map(memory => {
+        const content = memory.metadata.content || "Unknown content";
+        const topic = memory.metadata.topic || "general topic";
+        const mood = memory.metadata.mood || "neutral mood";
+        return `Previous interaction about ${topic}: ${content}: ${mood}`;
+      })
+      .join('\n');
+  }
+
+  static shouldSaveToLongTerm(isSummarizing, message, response) {
+    return isSummarizing;
+  }
+
+  static async extractUserName(userMessage, aiResponse) {
+    try {
+      if (!userMessage || userMessage.trim() === '') {
+        return null;
+      }
+
+      const extractPrompt = `
+      Based on this conversation exchange, extract the user's name if they shared it.
+      Only return the name, nothing else. If no name is found, return "NULL".
+      
+      User message: "${userMessage}"
+      AI response: "${aiResponse}"
+      `;
+
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(extractPrompt);
+      const extractedText = result.response.text().trim();
+
+      return extractedText === "NULL" ? null : extractedText;
+    } catch (error) {
+      console.error('Error extracting user name:', error);
+      return null;
     }
   }
   

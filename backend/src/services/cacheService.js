@@ -65,6 +65,18 @@ export class CacheService {
     keysToDelete.forEach(key => this.cache.delete(key));
     console.log(`🗑️ Invalidated ${keysToDelete.length} cache entries for user ${userId} profile update`);
   }
+  static invalidateSessionContext(userId) {
+  const keysToDelete = [];
+  for (const [key] of this.cache.entries()) {
+    if (key.startsWith(`${userId}:`)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => this.cache.delete(key));
+  // Deletes ALL sessions for the user
+  return keysToDelete.length;
+}
+
   
   /**
    * Invalidate cache when crisis/blocked status changes

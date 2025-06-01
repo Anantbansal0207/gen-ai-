@@ -3,6 +3,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config, initializeConfig } from '../config/index.js';
 import { CacheService } from './cacheService.js';
+import TopicAnalyzer from './topicAnalyzer.js';
 
 // Ensure config is initialized before accessing environment variables
 await initializeConfig();
@@ -152,25 +153,89 @@ static async getBatchUserData(userId, sessionId) {
       return [];
     }
   }
-  static async deleteSessionMemory(sessionId) {
-    try {
-      // Check if session exists first
-      const existingSession = await this.getSessionMemory(sessionId);
-      
-      if (!existingSession) {
-        console.log(`⚠️ No session found for session ID: ${sessionId}`);
-        return false;
-      }
-  
-      // Delete the session memory from Redis
-      await redis.del(`chat_session:${sessionId}`);
-      console.log(`✅ Session memory deleted for session ID: ${sessionId}`);
-      return true;
-    } catch (error) {
-      console.error('❌ Error deleting session memory:', error);
-      return false;
+  // Updated deleteSessionMemory method in MemoryService class
+static async deleteSessionMemory(sessionId, userId = null) {
+  try {
+    // Get the existing session data first
+    const existingSession = await this.getSessionMemory(sessionId);
+    
+    if (!existingSession || !existingSession.chat_context) {
+      console.log(`⚠️ No session found for session ID: ${sessionId}`);
+      return { success: false, summary: null };
     }
+
+    const chatContext = existingSession.chat_context;
+    const contextLength = chatContext.length;
+    
+    console.log(`📊 Session ${sessionId} has ${contextLength} messages before deletion`);
+
+    let sessionSummary = null;
+
+    // Only summarize and save if there are enough meaningful messages (at least 4 messages)
+    if (userId) {
+      console.log(`📝 Summarizing session ${sessionId} before deletion...`);
+      
+      try {
+        // Summarize the entire conversation
+        const summarizedContext = await this.summarizeConversation(chatContext);
+        
+        if (summarizedContext && summarizedContext.length > 0) {
+          // Extract the summary text (remove the "Previous conversation summary: " prefix)
+          const fullSummaryEntry = summarizedContext[0].content;
+          const prefix = 'Previous conversation summary: ';
+          const summaryText = fullSummaryEntry.startsWith(prefix)
+            ? fullSummaryEntry.slice(prefix.length)
+            : fullSummaryEntry;
+
+          // Import TopicAnalyzer dynamically to avoid circular imports
+          //const TopicAnalyzer = await import('./topicAnalyzer.js').then(module => module.default);
+          
+          // Analyze mood and topic for the summary
+          const mood = await TopicAnalyzer.analyzeMood(summaryText);
+          const topic = await TopicAnalyzer.analyzeTopic(summaryText);
+          
+          console.log(`🧠 Saving session summary to long-term memory - Mood: ${mood}, Topic: ${topic}`);
+          
+          // Save to long-term memory
+          await this.saveLongTermMemory(userId, {
+            content: summaryText,
+            response: 'Session summary before deletion',
+            type: 'session_deletion_summary',
+            mood: mood,
+            topic: topic
+          });
+          
+          // Store the summary to return for new session creation
+          sessionSummary = summaryText;
+          
+          console.log(`✅ Session ${sessionId} summarized and saved to long-term memory`);
+        } else {
+          console.log(`⚠️ Summarization failed for session ${sessionId}`);
+        }
+      } catch (summaryError) {
+        console.error(`❌ Error during summarization for session ${sessionId}:`, summaryError);
+        // Continue with deletion even if summarization fails
+      }
+    } else {
+      console.log(`⏭️ Skipping summarization for session ${sessionId} - insufficient messages or no userId`);
+    }
+
+    // Delete the session memory from Redis
+    await redis.del(`chat_session:${sessionId}`);
+    
+    // Invalidate cache if userId is provided
+    // if (userId) {
+    //   CacheService.invalidateSessionContext?.(userId, sessionId);
+    // }
+    
+    console.log(`✅ Session memory deleted for session ID: ${sessionId}`);
+    return { success: true, summary: sessionSummary };
+    
+  } catch (error) {
+    console.error('❌ Error deleting session memory:', error);
+    return { success: false, summary: null };
   }
+}
   static async unblockUser(userId, adminId = null) {
     try {
       const crisisKey = `${REDIS_KEYS.USER_CRISIS_STATUS}:${userId}`;
@@ -276,9 +341,6 @@ static async getBatchUserData(userId, sessionId) {
   static async summarizeConversation(context) {
     try {
       // Only summarize if there are enough messages
-      if (context.length < 6) {
-        return context;
-      }
       
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       
