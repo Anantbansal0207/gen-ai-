@@ -413,9 +413,15 @@ Generate a sarcastic companion response:`;
       } else {
         // OTHER intent - use regular therapy deflection
         console.log('Other technical request detected, using therapy deflection');
+        return {
+          shouldBlock: false,
+          response: null,
+          intent: intent,
+          isCrisis: false
+        };
         
-        const deflectionResponse = getTherapyDeflectionResponse();
-        const refinedDeflection = await refineTherapyResponse(deflectionResponse, genAI);
+        // const deflectionResponse = getTherapyDeflectionResponse();
+        // const refinedDeflection = await refineTherapyResponse(deflectionResponse, genAI);
         
         return {
           shouldBlock: true,

@@ -243,7 +243,14 @@ Your safety is the priority right now. Please reach out to professional crisis c
       }
       
       // Check if we're in the onboarding phase
-      if (userProfile && userProfile.name && !userProfile.onboardingComplete) {
+      if (userProfile && userProfile.name && !userProfile.onboardingComplete && isAutoWelcome) {
+        isOnboarding = true;
+        isWelcomeBack = true;
+        userName = userProfile.name;
+        customPrompt = WELCOME_BACK_PROMPT.replace('{userName}', userName);
+          console.log(`Welcome back trigger for returning user ${userName}`);
+      } 
+      else if(userProfile && userProfile.name && !userProfile.onboardingComplete) {
         isOnboarding = true;
         userName = userProfile.name;
         customPrompt = ONBOARDING_PROMPT;
@@ -322,7 +329,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
         } else {
           console.log(`Excluding name usage for this response`);
           userInfo = `[CRITICAL CLIENT INFORMATION]
-      DO NOT use their name in this response.`;
+      DO NOT use their name in this response unless specifically asked for it like do you remeber my name .The client's name is: ${userName}.`;
         }
       
         contextWithMemories.unshift({
@@ -366,7 +373,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
       });
       
       // Handle name extraction for first interaction
-      if (isFirstInteraction && !userProfile && !isAutoWelcome) {
+      if (isFirstInteraction && !userProfile ) {
         const extractedName = await this.extractUserName(message, finalResponse);
         if (extractedName) {
           console.log(`Extracted user name: ${extractedName}`);
