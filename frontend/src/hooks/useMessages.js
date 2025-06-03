@@ -16,7 +16,7 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
   // Typing animation configuration
   const TYPING_CONFIG = {
     bufferTime: 0,
-    charactersPerSecond: 60,
+    charactersPerSecond: 100,
     punctuationDelay: 60,
   };
 

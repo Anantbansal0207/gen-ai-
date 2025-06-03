@@ -33,12 +33,12 @@ function shouldIncludeNameInContext(sessionMemory, userName) {
   if (!userName) return false;
   
   // Only include name in roughly 15% of messages
-  const randomChance = Math.random() < 0.2;
+  const randomChance = Math.random() < 0.5;
   
   // Count recent messages to avoid consecutive name usage
   const recentMessages = sessionMemory.chat_context
     .filter(msg => msg.role === 'assistant')
-    .slice(-3); // Look at last 3 assistant messages
+    .slice(-2); // Look at last 3 assistant messages
   
   // Check if name was used in recent messages
   const namePattern = new RegExp(`\\b${userName}\\b`, 'i');
@@ -302,41 +302,57 @@ Your safety is the priority right now. Please reach out to professional crisis c
       }
 
       // Enhanced user profile handling
-      if (userName) {
-        const shouldIncludeName = shouldIncludeNameInContext(currentSessionMemory, userName);
-      
-        let userInfo = '';
-        let profileSummary = '';
-      
-        if (shouldIncludeName) {
-          userInfo = `[CRITICAL CLIENT INFORMATION]
-      The client's name is: ${userName}. Use their name sometimes (30 percent) in your responses. Use their name once in your response in a natural way.`;
-          console.log(`Including instruction to use ${userName}'s name in this response`);
-      
-          if (userProfile.onboardingSummary) {
-            profileSummary = `
-      
-      [CLIENT PROFILE - ESSENTIAL CONTEXT]
-      ${userProfile.onboardingSummary}
-      
-      [INSTRUCTIONS FOR USING PROFILE DATA]
-      - Reference specific details from this profile in your responses
-      - Tailor your therapeutic approach based on the client's background
-      - Remember their history and previous challenges
-      - Use this information to personalize your support
-      - Show you remember who they are through subtle references`;
-          }
-        } else {
-          console.log(`Excluding name usage for this response`);
-          userInfo = `[CRITICAL CLIENT INFORMATION]
-      DO NOT use their name in this response unless specifically asked for it like do you remeber my name .The client's name is: ${userName}.`;
-        }
-      
-        contextWithMemories.unshift({
-          role: 'user',
-          content: userInfo + profileSummary
-        });
-      }
+      // Enhanced user profile handling
+if (userName) {
+  // Always include name for auto welcome, otherwise use the existing logic
+  const shouldIncludeName = isAutoWelcome ? true : shouldIncludeNameInContext(currentSessionMemory, userName);
+
+  let userInfo = '';
+  let profileSummary = '';
+
+  if (shouldIncludeName) {
+    userInfo = `[CRITICAL CLIENT INFORMATION]
+The client's name is: ${userName}. Use their name sometimes (30 percent) in your responses. Use their name once in your response in a natural way.`;
+    console.log(`Including instruction to use ${userName}'s name in this response${isAutoWelcome ? ' (auto welcome)' : ''}`);
+
+    if (userProfile.onboardingSummary) {
+      profileSummary = `
+
+[CLIENT PROFILE - ESSENTIAL CONTEXT]
+${userProfile.onboardingSummary}
+
+[INSTRUCTIONS FOR USING PROFILE DATA]
+- Reference specific details from this profile in your responses
+- Tailor your therapeutic approach based on the client's background
+- Remember their history and previous challenges
+- Use this information to personalize your support
+- Show you remember who they are through subtle references`;
+    }
+  } else {
+    console.log(`Excluding name usage for this response`);
+    userInfo = `[CRITICAL CLIENT INFORMATION]
+DO NOT use their name ${userName} in this response anywhere unless specifically asked for it like do you remeber my name .The client's name is: ${userName}.`;
+ if (userProfile.onboardingSummary) {
+      profileSummary = `
+
+[CLIENT PROFILE - ESSENTIAL CONTEXT]
+${userProfile.onboardingSummary}
+
+[INSTRUCTIONS FOR USING PROFILE DATA]
+- DO NOT use their name ${userName} in this response
+- Reference specific details from this profile in your responses
+- Tailor your therapeutic approach based on the client's background
+- Remember their history and previous challenges
+- Use this information to personalize your support
+- Show you remember who they are through subtle references`;
+    }
+  }
+
+  contextWithMemories.unshift({
+    role: 'user',
+    content: userInfo + profileSummary
+  });
+}
 
       // Generate response
       console.log(`Generating response...`);

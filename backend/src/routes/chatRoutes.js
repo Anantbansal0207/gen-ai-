@@ -59,7 +59,7 @@ router.post('/refresh-session', authenticate, async (req, res) => {
       console.log(`📝 Starting new session with previous conversation summary`);
       initialContext = [{
         role: 'user',
-        content: `Previous conversation summary: ${deletionResult.summary}`,
+        content: `Previous conversation summary.Remember that it was some other day session: ${deletionResult.summary}`,
         timestamp: new Date().toISOString(),
         type: 'session_summary'
       }];
