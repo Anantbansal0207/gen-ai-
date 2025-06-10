@@ -1,6 +1,6 @@
 import { MemoryService } from './memoryService.js';
 import { generateChatResponse } from './geminiService.js';
-import { BASE_THERAPIST_PROMPT, PROBING_NUDGE_PROBABILITY } from './prompts.js';
+import { getRandomTherapistPrompt, PROBING_NUDGE_PROBABILITY } from './prompts.js';
 
 export class NudgeService {
   static async generateNudge(userId, sessionId) {
@@ -40,7 +40,8 @@ export class NudgeService {
         2. Identify a key theme, emotion, event, or point mentioned by the user that seems significant or could benefit from further exploration.
         3. Formulate ONE concise (under 25 words) question related to that identified point.
         4. The question should encourage deeper reflection or elaboration. Avoid simple check-ins like "take your time" or generic "how are you feeling?". Focus on connecting to the *content* of the past exchange.
-        5. Maintain your core empathetic, non-judgmental therapist persona: ${BASE_THERAPIST_PROMPT}
+        5. Maintain your core empathetic, non-judgmental therapist persona: ${getRandomTherapistPrompt()}
+
 
         Example Question Styles (adapt based on your analysis of the history):
         - "Reflecting on when you mentioned [topic/feeling from history], what's coming up for you now?"
@@ -53,7 +54,8 @@ export class NudgeService {
       } else {
         console.log(`Nudge Type: Gentle Check-in (Roll: ${nudgeTypeRoll.toFixed(2)}, Can Probe: ${canProbe})`);
         // Use the original gentle check-in prompt
-        systemPromptForNudge = `You are the AI therapist from the ongoing conversation. The user has paused for a short while after your last response. Offer a *gentle, brief, and non-pressuring* check-in to re-engage them softly. Avoid making demands or sounding impatient. Examples: "Just checking in, take your time.", "No rush, just wanted to see how you're processing that.", "Any thoughts emerging?", "Is there anything else on your mind regarding that?". Keep it under 20 words. Your persona MUST remain consistent with the main therapist prompt: ${BASE_THERAPIST_PROMPT}`;
+        systemPromptForNudge = `You are the AI therapist from the ongoing conversation. The user has paused for a short while after your last response. Offer a *gentle, brief, and non-pressuring* check-in to re-engage them softly. Avoid making demands or sounding impatient. Examples: "Just checking in, take your time.", "No rush, just wanted to see how you're processing that.", "Any thoughts emerging?", "Is there anything else on your mind regarding that?". Keep it under 20 words. Your persona MUST remain consistent with the main therapist prompt: ${getRandomTherapistPrompt()}
+`;
       }
 
       // 4. Generate the Nudge Response
