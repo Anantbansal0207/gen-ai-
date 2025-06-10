@@ -8,6 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CacheService } from './cacheService.js';
 import { config, initializeConfig } from '../config/index.js';
 import { 
+  getRandomTherapistPrompt,
   BASE_THERAPIST_PROMPT,
   INTRO_PROMPT,
   WELCOME_BACK_PROMPT,
@@ -219,7 +220,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
       let isOnboarding = false;
       let isWelcomeBack = false;
       let isAutoWelcome = !message || message.trim() === '';
-      let customPrompt = BASE_THERAPIST_PROMPT;
+      let customPrompt = getRandomTherapistPrompt();;
       let userName = null;
 
       // Check if this is a brand new user with no history
@@ -265,7 +266,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
           customPrompt = WELCOME_BACK_PROMPT.replace('{userName}', userName);
           console.log(`Welcome back trigger for returning user ${userName}`);
         } else {
-          customPrompt = BASE_THERAPIST_PROMPT;
+          customPrompt = getRandomTherapistPrompt();;
           console.log(`Personalized conversation for returning user ${userName}`);
         }
       }

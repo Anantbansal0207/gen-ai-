@@ -285,4 +285,4 @@ const getRandomTherapistPrompt = () => {
   return prompts[randomIndex];
 };
 
-export const BASE_THERAPIST_PROMPT = getRandomTherapistPrompt();
+export { getRandomTherapistPrompt };
