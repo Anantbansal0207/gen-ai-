@@ -20,10 +20,15 @@ router.get('/user', async (req, res) => {
 
 // Sign Up Initiation
 router.post('/signup/initiate', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, phoneNumber } = req.body;
   
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
+  }
+  
+  // Optional phone number validation
+  if (phoneNumber && !/^\+?[\d\s\-\(\)]{10,15}$/.test(phoneNumber.replace(/\s/g, ''))) {
+    return res.status(400).json({ error: 'Invalid phone number format' });
   }
   
   try {
@@ -36,8 +41,12 @@ router.post('/signup/initiate', async (req, res) => {
     await sendVerificationEmail(email, otp);
     storeOTP(email, otp);
     
-    // Store pending signup data in session
-    req.session.auth.pendingSignup = { email, password };
+    // Store pending signup data in session (including phone number)
+    req.session.auth.pendingSignup = { 
+      email, 
+      password, 
+      phoneNumber: phoneNumber || null 
+    };
     
     // Save the session explicitly to ensure it's written to Redis
     await new Promise((resolve, reject) => {
@@ -75,17 +84,50 @@ router.post('/signup/complete', async (req, res) => {
     }
     
     const isValidOtp = await verifyOTP(email, otp);
-if (!isValidOtp) {
-  return res.status(400).json({ error: 'Invalid or expired verification code' });
-}
+    if (!isValidOtp) {
+      return res.status(400).json({ error: 'Invalid or expired verification code' });
+    }
 
-    
+    // Create user with Supabase
     const { data, error } = await supabase.auth.signUp({
       email: pendingSignup.email,
       password: pendingSignup.password,
     });
     
     if (error) throw error;
+    
+    // If phone number was provided, update user metadata
+    if (pendingSignup.phoneNumber && data.user) {
+      try {
+        // Update user metadata with phone number
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { 
+            phone_number: pendingSignup.phoneNumber 
+          }
+        });
+        
+        if (updateError) {
+          console.error('Error updating user metadata:', updateError);
+          // Don't fail the signup if metadata update fails
+        } else {
+          console.log('Phone number saved successfully:', pendingSignup.phoneNumber);
+        }
+        
+        // Alternatively, if you have a custom users table, insert the phone number there
+        // const { error: insertError } = await supabase
+        //   .from('users')
+        //   .insert({
+        //     id: data.user.id,
+        //     email: data.user.email,
+        //     phone_number: pendingSignup.phoneNumber,
+        //     created_at: new Date().toISOString()
+        //   });
+        
+      } catch (metadataError) {
+        console.error('Error saving phone number:', metadataError);
+        // Continue with signup even if phone number storage fails
+      }
+    }
     
     // Clear pending signup data
     delete req.session.auth.pendingSignup;
@@ -192,8 +234,33 @@ router.post('/signin', async (req, res) => {
 //       res.status(500).json({ error: error.message || 'Failed to reset password' });
 //     }
 //   });
-  
-  
+
+// Get all users with phone numbers (admin function for messaging)
+router.get('/users/phone-numbers', async (req, res) => {
+  try {
+    // This should be protected - only allow admin access
+    // Add your admin authentication check here
+    
+    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    
+    if (error) throw error;
+    
+    // Filter and map users who have phone numbers
+    const usersWithPhones = users
+      .filter(user => user.user_metadata?.phone_number)
+      .map(user => ({
+        id: user.id,
+        email: user.email,
+        phone_number: user.user_metadata.phone_number,
+        created_at: user.created_at
+      }));
+    
+    res.status(200).json({ users: usersWithPhones });
+  } catch (error) {
+    console.error('Error getting users with phone numbers:', error);
+    res.status(500).json({ error: 'Failed to retrieve users' });
+  }
+});
 
 // Sign Out
 router.post('/signout', async (req, res) => {
