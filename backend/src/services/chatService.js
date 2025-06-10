@@ -9,7 +9,7 @@ import { CacheService } from './cacheService.js';
 import { config, initializeConfig } from '../config/index.js';
 import { 
   getRandomTherapistPrompt,
-  BASE_THERAPIST_PROMPT,
+  
   INTRO_PROMPT,
   WELCOME_BACK_PROMPT,
   ONBOARDING_PROMPT,
