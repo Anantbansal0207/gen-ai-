@@ -74,12 +74,8 @@ export const completeSignUp = async (email, otp) => {
     if (data.user?.id) {
       localStorage.setItem('userId', data.user.id);
       
-      // Store a persistent sessionId for this user
-      const existingSessionId = localStorage.getItem(`sessionId_${data.user.id}`);
-      if (!existingSessionId) {
-        const newSessionId = crypto.randomUUID();
-        localStorage.setItem(`sessionId_${data.user.id}`, newSessionId);
-      }
+      // Use the getSessionId function to handle session ID logic
+      getSessionId(data.user.id);
     }
 
     return data;
@@ -114,12 +110,8 @@ export const signIn = async (email, password) => {
     if (data.user?.id) {
       localStorage.setItem('userId', data.user.id);
       
-      // Store a persistent sessionId for this user
-      const existingSessionId = localStorage.getItem(`sessionId_${data.user.id}`);
-      if (!existingSessionId) {
-        const newSessionId = crypto.randomUUID();
-        localStorage.setItem(`sessionId_${data.user.id}`, newSessionId);
-      }
+      // Use the getSessionId function to handle session ID logic
+      getSessionId(data.user.id);
     }
 
     return data;
@@ -218,6 +210,7 @@ export const signOut = async () => {
     throw error;
   }
 };
+
 export const getSessionId = (userId) => {
   if (!userId) return null;
   
@@ -231,50 +224,28 @@ export const getSessionId = (userId) => {
   localStorage.setItem(`sessionId_${userId}`, newSessionId);
   return newSessionId;
 };
+
 // Get all users with phone numbers for messaging (admin function)
-
 export const getAllUsersWithPhoneNumbers = async () => {
-
   try {
-
     // This requires admin access - typically done server-side
-
     const { data: { users }, error } = await supabase.auth.admin.listUsers();
-
     
-
     if (error) throw error;
-
     
-
     // Filter and map users who have phone numbers
-
     const usersWithPhones = users
-
       .filter(user => user.user_metadata?.phone_number)
-
       .map(user => ({
-
         id: user.id,
-
         email: user.email,
-
         phone_number: user.user_metadata.phone_number,
-
         created_at: user.created_at
-
       }));
-
     
-
     return usersWithPhones;
-
   } catch (error) {
-
     console.error('Error getting users with phone numbers:', error);
-
     throw error;
-
   }
-
 };
