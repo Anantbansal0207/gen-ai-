@@ -347,6 +347,8 @@ async function generateSarcasticTechResponse(message, genAI) {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Generate a sarcastic but friendly response as a companion who doesn't know about technical stuff as we dont want to let someone reverse engineer us. The user asked about something technical. Be playful and sarcastic while deflecting, but maintain a companion-like tone. Don't be mean, just playfully dismiss the technical question and redirect to being supportive.
 
+    Limit the response to strictly under 40 words
+
 User's technical question: "${message}"
 
 Generate a sarcastic companion response:`;
