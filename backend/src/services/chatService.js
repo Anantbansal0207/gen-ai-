@@ -431,6 +431,7 @@ ${userProfile.onboardingSummary}
       await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
       
       // Update cache with new session context
+      console.log(`updating cache Memory for Session: ${sessionId}`);
       CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
 
       // Handle summarization for long conversations

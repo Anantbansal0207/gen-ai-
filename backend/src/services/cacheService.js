@@ -38,18 +38,28 @@ export class CacheService {
   /**
    * Update only session context in cache (most frequent update)
    */
-  static updateSessionContext(userId, sessionId, newContext) {
-    const key = `${userId}:${sessionId}`;
-    const cached = this.cache.get(key);
-    
-    if (cached && cached.data && cached.data.sessionMemory) {
-      cached.data.sessionMemory.chat_context = newContext;
-      cached.timestamp = Date.now(); // Refresh timestamp
-      console.log(`🔄 Updated session context cache for user ${userId}`);
-      return true;
+static updateSessionContext(userId, sessionId, newContext) {
+  const key = `${userId}:${sessionId}`;
+  const cached = this.cache.get(key);
+  
+  if (cached && cached.data) {
+    // If sessionMemory is null, create the structure
+    if (!cached.data.sessionMemory) {
+      cached.data.sessionMemory = {
+        session_id: sessionId,
+        user_id: userId,
+        chat_context: []
+      };
     }
-    return false;
+    
+    // Now update the context
+    cached.data.sessionMemory.chat_context = newContext;
+    cached.timestamp = Date.now();
+    console.log(`🔄 Updated session context cache for user ${userId}`);
+    return true;
   }
+  return false;
+}
   
   /**
    * Invalidate cache when user profile is updated
