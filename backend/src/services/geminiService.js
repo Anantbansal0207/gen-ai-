@@ -16,10 +16,12 @@ export const generateChatResponse = async (prompt, context = [], systemPrompt = 
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Ensure history is initialized and starts with a user message
-    const formattedHistory = context.length > 0 ? context.map(msg => ({
-      role: msg.role === "assistant" ? "model" : msg.role, // Change "assistant" to "model"
-      parts: [{ text: msg.content }]
-    })) : [{ role: "user", parts: [{ text: prompt }] }]; // Ensure at least one user message
+    const formattedHistory = context.length > 0 ? 
+  context.map(msg => ({
+    role: msg.role === "assistant" ? "model" : msg.role,
+    parts: [{ text: msg.content }]
+  })) : 
+  []; // ← Empty array when no context // Ensure at least one user message
 
     // Start chat with the full conversation history
     const chat = model.startChat({

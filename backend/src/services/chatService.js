@@ -271,13 +271,13 @@ Your safety is the priority right now. Please reach out to professional crisis c
         }
       }
 
-      // Only add user message to context if it's not an auto welcome
-      if (!isAutoWelcome) {
-        currentSessionMemory.chat_context.push({
-          role: 'user',
-          content: message
-        });
-      }
+      // // Only add user message to context if it's not an auto welcome
+      // if (!isAutoWelcome) {
+      //   currentSessionMemory.chat_context.push({
+      //     role: 'user',
+      //     content: message
+      //   });
+      // }
 
       console.log(`Current Chat Context Length: ${currentSessionMemory.chat_context.length}`);
 
@@ -364,6 +364,13 @@ ${userProfile.onboardingSummary}
         contextWithMemories,
         customPrompt
       );
+       // Only add user message to context if it's not an auto welcome
+      if (!isAutoWelcome) {
+        currentSessionMemory.chat_context.push({
+          role: 'user',
+          content: message
+        });
+      }
       
       let processedResponse = response;
       console.log(`Initial Response: ${response}`);
