@@ -371,6 +371,12 @@ ${userProfile.onboardingSummary}
           content: message
         });
       }
+      if (isAutoWelcome) {
+        currentSessionMemory.chat_context.push({
+          role: 'user',
+          content: 'this is auto generated message. User did not type this. '
+        });
+      }
       
       let processedResponse = response;
       console.log(`Initial Response: ${response}`);
