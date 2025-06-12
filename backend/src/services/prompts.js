@@ -283,8 +283,25 @@ const getRandomTherapistPrompt = () => {
     Respond by carefully reflecting their emotions and insights back to help them process their experience.`
   ];
 
-  const randomIndex = Math.floor(Math.random() * prompts.length);
-  return prompts[randomIndex];
+  // Weighted selection logic
+  const random = Math.random();
+  
+  if (random < 0.4) {
+    // 40% chance for original questioning approach (index 0)
+    return prompts[0];
+  } else if (random < 0.55) {
+    // 15% chance for affirmative & supportive approach (index 1)
+    return prompts[1];
+  } else if (random < 0.7) {
+    // 15% chance for short response approach (index 2)
+    return prompts[2];
+  } else if (random < 0.85) {
+    // 15% chance for solution-focused approach (index 3)
+    return prompts[3];
+  } else {
+    // 15% chance for reflective mirroring approach (index 4)
+    return prompts[4];
+  }
 };
 
 export { getRandomTherapistPrompt };
