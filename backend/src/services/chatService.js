@@ -533,7 +533,7 @@ ${userProfile.onboardingSummary}
       }
 
       const extractPrompt = `
-      Based on this conversation exchange, extract the user's name if they shared it.
+      Based on this conversation exchange, extract the user's first name if they shared it.
       Only return the name, nothing else. If no name is found, return "NULL".
       
       User message: "${userMessage}"
