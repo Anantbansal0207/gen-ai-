@@ -124,7 +124,7 @@ const getRandomTherapistPrompt = () => {
   - Actively incorporate the client's specific context details in responses
 
   CORE GUIDELINES:
-  - Length: 10-50 words
+  - Length: 50-60 words
   - Tone: Warmly professional with authentic moments
   - Focus: Client's emotional journey
   - Technique: Dynamic, adaptive support
@@ -172,7 +172,7 @@ const getRandomTherapistPrompt = () => {
     - Personalize conversation by using the client's name occasionally
 
     CORE GUIDELINES:
-    - Length: 10-50 words
+    - Length: 50-60 words
     - Tone: Warmly supportive and affirming
     - Focus: Validation and encouragement
     - Technique: Supportive reflection without probing questions
@@ -239,7 +239,7 @@ const getRandomTherapistPrompt = () => {
     - Focus on empowerment and capability
 
     CORE GUIDELINES:
-    - Length: 10-50 words
+    - Length: 50-60 words
     - Tone: Supportive but action-oriented
     - Focus: Practical solutions and next steps
     - Technique: Solution-focused support
@@ -275,7 +275,7 @@ const getRandomTherapistPrompt = () => {
     - Maintain warm, understanding presence
 
     CORE GUIDELINES:
-    - Length: 10-50 words
+    - Length: 50-60 words
     - Tone: Reflective and understanding
     - Focus: Mirroring and reflection
     - Technique: Therapeutic reflection
