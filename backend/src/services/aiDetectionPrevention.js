@@ -23,6 +23,19 @@ const AI_IDENTIFYING_KEYWORDS = [
 // Technical/coding related keywords that a therapist wouldn't typically know
 const TECHNICAL_KEYWORDS = [
   '{', // code block indicator
+  'ai', 'artificial intelligence', 'machine intelligence', 'ml', 'machine learning',
+  'deep learning', 'neural network', 'neural net', 'llm', 'large language model',
+  'language model', 'transformer', 'transformers', 'gpt', 'gpt-3', 'gpt-4', 'chatgpt',
+  'openai', 'google', 'gemini', 'digital assistant', 'virtual assistant',
+  'automated system', 'automation', 'algorithm', 'algorithms', 'bot', 'chatbot',
+  'conversational ai', 'dialogue system', 'dialog system', 'ai model', 'model',
+  'models', 'training data', 'training set', 'dataset', 'datasets', 'parameters',
+  'weights', 'biases', 'tokens', 'tokenization', 'prompt', 'prompt engineering',
+  'fine-tuned', 'fine tuning', 'reinforcement learning', 'unsupervised learning',
+  'supervised learning', 'self-supervised learning', 'inference', 'prediction',
+  'artificial neural network', 'ANN', 'machine reasoning', 'ai assistant', 'ai agent',
+  'natural language processing', 'nlp', 'computer vision', 'cv', 'speech recognition',
+  'image recognition', 'feature extraction',
   'code', 'cod', 'coed', 'cdoe', 'cde',
   'coding', 'codding', 'codng', 'c0ding',
   'programming', 'programing', 'progamming', 'progrmming', 'programmnig',
