@@ -547,7 +547,7 @@ async function refineWithGemini(text) {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `You are a speech pattern editor specializing in natural filler word placement.
 
-TASK: Reposition filler words to sound more natural and conversational.
+TASK: Reposition the filler words to sound more natural and conversational.You dont have to add any you have to reposition the filler word to make it more flowing.
 
 RULES:
 1. KEEP all original words - do not add, remove, or change any words except repositioning fillers
