@@ -3,7 +3,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import HomePage from './components/HomePage';
-import ChatInterface from './components/ChatInterface';
+import ChatInterface from './components/new.jsx';
 import DreamInterpreter from './components/DreamInterpreter';
 import MentalHealthPlan from './components/MentalHealthPlan';
 import RelationshipCoaching from './components/RelationshipCoaching';
