@@ -28,18 +28,7 @@ const Navbar = () => {
     marginRight: "10px",
     cursor: "pointer",
     borderRadius:"100px"
-  }} onClick={() => navigate("/signup")}>Sign Up</button>
-        <button  style={{
-    backgroundColor: "#f8b404",
-    color: "#fff",
-    padding: "8px 16px",
-    border: "none",
-    borderRadius: "6px",
-    fontWeight: "bold",
-    marginRight: "10px",
-    cursor: "pointer",
-    borderRadius:"100px"
-  }} onClick={() => navigate("/signin")}>Sign In</button>
+  }} onClick={() => navigate("/auth")}>Get Started</button>
       </div>
 
       <div className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
@@ -49,8 +38,7 @@ const Navbar = () => {
       </div>
 
       <div className={`mobile-menu ${menuOpen ? "show" : ""}`}>
-        <button onClick={() => { setMenuOpen(false); navigate("/signup"); }}>Sign Up</button>
-        <button onClick={() => { setMenuOpen(false); navigate("/signin"); }}>Sign In</button>
+        <button onClick={() => { setMenuOpen(false); navigate("/auth"); }}>Get Started</button>
       </div>
     </nav>
   );

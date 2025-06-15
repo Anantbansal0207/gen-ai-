@@ -15,6 +15,10 @@ const Homepage = () => {
     navigate("/chat");
   };
 
+  const handleAboutClick = () => {
+    navigate("/about");
+  };
+
   const TypewriterText = ({ text, speed = 100 }) => {
     const [displayedText, setDisplayedText] = useState("");
     const [index, setIndex] = useState(0);
@@ -97,7 +101,7 @@ const Homepage = () => {
               <p className="width">
                 Feeling stuck or just need to talk? This is your space. Always here, always private — for real conversations that help you breathe a little easier.
               </p>
-              <button style={{ marginTop: '25px' }} className="cta-black">
+              <button style={{ marginTop: '25px' }} className="cta-black" onClick={handleStartClick}>
                 <span className="cta-black-text">Start Healing</span>
                 <span className="cta-black-arrow">→</span>
               </button>
@@ -139,7 +143,7 @@ const Homepage = () => {
           </ul>
           {/* <button className="cta">Open Up →</button> */}
           <div className="cta-wrapper">
-            <button className="cta">Open Up →</button>
+            <button className="cta" onClick={handleStartClick}>Open Up →</button>
           </div>
 
         </div>
@@ -155,10 +159,10 @@ const Homepage = () => {
       {/* Footer CTA */}
       <footer className="footer-cta">
         <div>
-          <h1>There’s a reason we care so much</h1>
+          <h1>There's a reason we care so much</h1>
           <p>It all started with a deep need to make support accessible.</p>
         </div>
-        <button className="footers-button">discover our purpose →</button>
+        <button className="footers-button" onClick={handleAboutClick}>discover our purpose →</button>
       </footer>
     </div>
   );
