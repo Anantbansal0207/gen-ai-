@@ -1,3 +1,4 @@
+/*
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,6 +24,7 @@ body {
 }
 
 /* Glass Morphism */
+/*
 .glass {
   @apply backdrop-blur-md bg-white/30 border border-white/20;
 }
@@ -32,6 +34,7 @@ body {
 }
 
 /* Chat Bubbles */
+/*
 .chat-bubble {
   @apply relative p-4 rounded-[20px] backdrop-blur-sm transition-all duration-200;
 }
@@ -45,6 +48,7 @@ body {
 }
 
 /* Animations */
+/*
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -55,6 +59,7 @@ body {
 }
 
 /* Responsive Design */
+/*
 @media (max-width: 768px) {
   .glass-container {
     @apply px-4;
@@ -65,3 +70,4 @@ body {
   }
 }
 
+*/
