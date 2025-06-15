@@ -44,55 +44,64 @@ const Homepage = () => {
     <div className="container">
       <div className="app">
         <main className="main">
-          <div className="content">
-            <p className="highlight">YOUR MIND, MADE LIGHTER</p>
-            <h1 className="title">
-              <strong>
-                Talk. Feel Understood. <TypewriterText text="Grow." speed={400} />
-              </strong>
-            </h1>
+          <section className="hero">
 
-            <div className="tag-main">
-              <div className="tags">
-                {[
-                  "Personal Reflections",
-                  "Non-Judgemental Listening",
-                  "Always Available",
-                  "Thoughtful Conversations",
-                  "Empathy, Not Scripts",
-                  "Privacy First",
-                ].map((tag, index) => (
-                  <span key={index} className="tag">
-                    {tag}
-                  </span>
-                ))}
+            <div className="content">
+
+
+              <p className="highlight">YOUR MIND, MADE LIGHTER</p>
+              <h1 className="title">
+                <strong>
+                  Talk. Feel Understood. <TypewriterText text="Grow." speed={200} />
+                </strong>
+              </h1>
+
+              <div className="tag-main">
+                <div className="tags">
+                  {[
+                    "Personal Reflections",
+                    "Non-Judgemental Listening",
+                    "Always Available",
+                    "Thoughtful Conversations",
+                    "Empathy, Not Scripts",
+                    "Privacy First",
+                  ].map((tag, index) => (
+                    <span key={index} className="tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="cta-buttons" onClick={handleStartClick} style={{ cursor: "pointer" }}>
+                <button className="cta">
+                  <span className="cta-text">Start Talking</span>
+                  <span className="cta-arrow">→</span>
+                </button>
               </div>
             </div>
 
-            <div className="cta-buttons" onClick={handleStartClick} style={{ cursor: "pointer" }}>
-              <button className="cta">
-                <span className="cta-text">Start Talking</span>
-                <span className="cta-arrow">→</span>
-              </button>
-            </div>
-          </div>
 
-          <section className="info">
+          </section>
+
+          <section className="second info">
             <div className="info-text">
-              <h1 style={{fontSize: '35px'}} className="width space">
+              <h1 className="width space">
                 You Deserve A Space To Feel Safe, Heard, And Understood.
               </h1>
-              <h4 style={{fontSize: '20px', marginTop: '25px'}} className="width">
+              <h4 className="width">
                 No scripts. Just empathy and reflection that feels real.
                 Start with a calming conversation
+
               </h4>
-              <p style={{fontSize: '15px', marginTop: '25px'}} className="width">
+              <p className="width">
                 Feeling stuck or just need to talk? This is your space. Always here, always private — for real conversations that help you breathe a little easier.
               </p>
-              <button style={{marginTop: '25px'}} className="cta-black" onClick={handleStartClick}>
+              <button style={{ marginTop: '25px' }} className="cta-black">
                 <span className="cta-black-text">Start Healing</span>
                 <span className="cta-black-arrow">→</span>
               </button>
+
             </div>
             <div className="info-image">
               <Svgmair />
@@ -120,7 +129,7 @@ const Homepage = () => {
       {/* Feature Box */}
       <section className="feature-box">
         <div className="feature-text">
-          <h1>Grow emotionally with clarity and confidence.</h1>
+          <h1 style={{ width: '37vw' }}>Grow emotionally with clarity and confidence.</h1>
           <ul>
             <li>Build emotional resilience, one conversation at a time.</li>
             <li>Clarify your thoughts with kind, guided reflection.</li>
@@ -128,14 +137,17 @@ const Homepage = () => {
             <li>Learn how to set healthy emotional boundaries.</li>
             <li>Reframe your self-talk for confidence & calm.</li>
           </ul>
+          {/* <button className="cta">Open Up →</button> */}
           <div className="cta-wrapper">
-            <button className="cta" onClick={handleStartClick}>Open Up →</button>
+            <button className="cta">Open Up →</button>
           </div>
+
         </div>
         <div className="feature-img">
           <SvgSecond />
         </div>
       </section>
+
 
       {/* FAQ */}
       <FAQComponent />
@@ -143,10 +155,10 @@ const Homepage = () => {
       {/* Footer CTA */}
       <footer className="footer-cta">
         <div>
-          <h1>Vulputate et pulvinar etiam</h1>
-          <p>Suspendisse tellus consectetur</p>
+          <h1>There’s a reason we care so much</h1>
+          <p>It all started with a deep need to make support accessible.</p>
         </div>
-        <button className="footers-button">Learn More →</button>
+        <button className="footers-button">discover our purpose →</button>
       </footer>
     </div>
   );

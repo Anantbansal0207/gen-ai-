@@ -63,6 +63,7 @@ const Sidebar = ({
   const [hoveredMessage, setHoveredMessage] = useState(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const sidebarRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -181,11 +182,11 @@ const Sidebar = ({
             </div>
 
             <div className="sidebar-footer">
-              <button className="footer-button">
+              <button className="footer-button" onClick={() => navigate('/privacy')}>
                 <Shield size={16} className="footer-icon" />
                 <span>Privacy Policy</span>
               </button>
-              <button className="footer-button">
+              <button className="footer-button" onClick={() => navigate('/chat-guide')}>
                 <BookOpen size={16} className="footer-icon" />
                 <span>Chat Guide</span>
               </button>
@@ -269,15 +270,15 @@ const Sidebar = ({
         </div>
 
         <div className="sidebar-footer">
-          <button className="footer-button">
+          <button className="footer-button" onClick={() => navigate('/privacy')}>
             <Shield size={16} className="footer-icon" />
             <span>Privacy Policy</span>
           </button>
-          <button className="footer-button">
+          <button className="footer-button" onClick={() => navigate('/chat-guide')}>
             <BookOpen size={16} className="footer-icon" />
             <span>Chat Guide</span>
           </button>
-          <button className="footer-button">
+          <button className="footer-button" onClick={() => navigate('/about')}>
             <Info size={16} className="footer-icon" />
             <span>About Us</span>
           </button>

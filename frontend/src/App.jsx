@@ -12,6 +12,9 @@ import LifePrediction from './components/LifePrediction';
 import AuthForm from './components/AuthForm';
 import { ThemeProvider } from './context/ThemeContext';
 import Footer from './components/Footer';
+import AboutUsPage from './components/AboutUsPage';
+import ChatGuide from './components/ChatGuide';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import { checkAuthStatus, signOut } from './services/authService.js';
 
 function App() {
@@ -129,6 +132,9 @@ function App() {
           <Route path="/mental-health" element={<MentalHealthPlan user={user} />} />
           <Route path="/relationship" element={<RelationshipCoaching user={user} />} />
           <Route path="/life-prediction" element={<LifePrediction user={user} />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/chat-guide" element={<ChatGuide />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route 
             path="/auth" 
             element={

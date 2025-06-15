@@ -1,3 +1,5 @@
+@import url(https://db.onlinewebfonts.com/c/8e38c9cc931e43e959d8341ad03741ab?family=Unitext+Regular);
+
 :root {
   --bg-image: url('./assets/man.jpg');
 }
@@ -10,8 +12,45 @@ body {
   background-color: #fff8e7;
   color: #2d2d2d;
 }
+
 .width{
   width: 40vw;
+}
+
+.hero{
+  height: 80vh;
+  margin-top: 8vh;
+}
+
+.hero h1{
+  font-family: "Unitext Regular";
+  font-weight: 600;
+}
+
+.second{
+  margin-top: 0vh;
+}
+
+.second.info h1{
+  font-size: 30px;
+}
+
+.second.info h4{
+  font-size: 20px;
+  margin-top: 20px;
+}
+
+.second.info p{
+  font-size: 15px;
+  margin-top: 20px;
+}
+
+.fourth.testimonial h1{
+  font-size: 40px;
+}
+
+.fourth.testimonial p{
+  font-size: 17px;
 }
 
 .container {
