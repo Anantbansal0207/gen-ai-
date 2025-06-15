@@ -38,7 +38,7 @@ app.set('trust proxy', 1);
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://www.xryptt.com', 'https://xryptt.com', 'https://xrypttsaas-1.onrender.com', 'https://xrypttsaas.onrender.com']
+    ? ['https://www.xryptt.com', 'https://xryptt.com', 'https://xrypttsaas-1.onrender.com', 'https://xrypttsaas.onrender.com','https://frontend-ai1.onrender.com','https://thelumaya.com/','https://www.thelumaya.com/']
     : ['http://localhost:5173','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--33edf5bb.local-credentialless.webcontainer-api.io','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3-ujzq9jau--5173--33edf5bb.local-credentialless.webcontainer-api.io','https://frontend-ai1.onrender.com','https://thelumaya.com/','https://www.thelumaya.com/'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
