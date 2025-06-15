@@ -45,7 +45,7 @@ const sendWelcomeEmail = async (email) => {
 
     // Send the email
     await resend.emails.send({
-      from: 'XRYPTT <wallettracker@tixflip.in>',
+      from: 'Lumaya <support@thelumaya.com>',
       to: email,
       subject: subject,
       html: content,
@@ -141,7 +141,7 @@ const sendVerificationEmail = async (email, otp) => {
 
     // Send the email
     await resend.emails.send({
-      from: 'Wallet Monitor <wallettracker@tixflip.in>',
+      from: 'Lumaya <support@thelumaya.com>',
       to: email,
       subject: 'Verify Your Email – Welcome to Lumaya',
       html: `
@@ -187,7 +187,7 @@ const sendEmailNotification = async (transactionDetails, recipientEmail) => {
     const resend = new Resend(config.resend.apiKey);
 
     await resend.emails.send({
-      from: 'Wallet Monitor <wallettracker@tixflip.in>',
+      from: 'Lumaya <support@thelumaya.com>',
       to: recipientEmail,
       subject,
       html: body,
@@ -223,7 +223,7 @@ ${transactionDetails}
     const resend = new Resend(config.resend.apiKey);
 
     await resend.emails.send({
-      from: 'Wallet Monitor <wallettracker@tixflip.in>',
+      from: 'Lumaya <support@thelumaya.com>',
       to: recipientEmail,
       subject,
       html: body,
