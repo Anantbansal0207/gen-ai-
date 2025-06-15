@@ -40,8 +40,8 @@ function App() {
   }, []);
 
   // Check for existing session on app load
-  
-  
+
+
 
 
   // Handle auth redirects on first load
@@ -53,7 +53,7 @@ function App() {
       const token =
         queryParams.get('token') ||
         hashParams.get('access_token') ||
-        (location.search.includes('token=') 
+        (location.search.includes('token=')
           ? location.search.split('token=')[1]?.split('&')[0]
           : null);
 
@@ -66,7 +66,7 @@ function App() {
         sessionStorage.setItem('recoveryToken', token);
         console.log("Recovery token stored.");
       }
-      
+
       // Redirect to auth form
       navigate('/auth', { state: { from: location.pathname } });
     }
@@ -75,11 +75,11 @@ function App() {
   const handleAuthSuccess = (userData) => {
     console.log("Authentication successful", userData);
     setUser(userData);
-    
+
     // Navigate to the intended path if it exists, otherwise go home
     const intendedPath = location.state?.from || '/';
     navigate(intendedPath);
-    
+
     // Clean up any tokens
     sessionStorage.removeItem('recoveryToken');
   };
@@ -119,11 +119,13 @@ function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background transition-colors duration-200">
-        <Navbar 
-          user={user} 
-          onLogout={handleLogout}
-          navLinks={navLinks}
-        />
+        {location.pathname !== '/chat' && (
+          <Navbar
+            user={user}
+            onLogout={handleLogout}
+            navLinks={navLinks}
+          />
+        )}
 
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -135,13 +137,13 @@ function App() {
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/chat-guide" element={<ChatGuide />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route 
-            path="/auth" 
+          <Route
+            path="/auth"
             element={
               <div className="container mx-auto px-4 py-8">
                 <AuthForm onAuthSuccess={handleAuthSuccess} />
               </div>
-            } 
+            }
           />
           <Route path="*" element={<HomePage />} />
         </Routes>
