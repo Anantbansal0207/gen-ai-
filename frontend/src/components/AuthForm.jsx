@@ -1,17 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import { Eye, EyeOff, User, Lock, Phone, Mail, KeyRound } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import './LoginForm.css';
+import imgpodcasting from '../assets/Podcasting.png';
+
+// Import the backend services and utilities
 import { initiateSignUp, completeSignUp, signIn, initiatePasswordReset, completePasswordReset } from '../services/authService';
 import { useToast } from '../hooks/useToast';
 import { validateEmail } from '../utils/validation';
 
-import bg from '../assets/signUpBg.jpg';
-
 const AuthForm = ({ onAuthSuccess }) => {
-  const [mode, setMode] = useState('signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [resetToken, setResetToken] = useState('');
+  const [currentMode, setCurrentMode] = useState("signin"); // signin, signup, forgot, reset, verify
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  
+  const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
 
   // Enhanced token detection on component mount
@@ -28,7 +38,7 @@ const AuthForm = ({ onAuthSuccess }) => {
 
     if (token) {
       setResetToken(token);
-      setMode('reset');
+      setCurrentMode('reset');
       // Clean up the URL
       window.history.replaceState({}, document.title, window.location.pathname);
       // Store token temporarily if needed
@@ -38,52 +48,53 @@ const AuthForm = ({ onAuthSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    if (!validateEmail(email) && mode !== 'reset') {
+
+    // Validation for email (except reset mode)
+    if (!validateEmail(email) && currentMode !== 'reset') {
       showError('Please enter a valid email address');
       return;
     }
-  
+
     try {
-      switch (mode) {
-        case 'signin':
+      switch (currentMode) {
+        case "signin":
           if (!password || password.length < 6) {
             showError('Password must be at least 6 characters');
             return;
           }
           const { user } = await signIn(email, password);
           showSuccess('Successfully signed in!');
-          onAuthSuccess(user);
+          if (onAuthSuccess) {
+            onAuthSuccess(user);
+          }
           break;
-  
-        case 'signup':
+
+        case "signup":
           if (!password || password.length < 6) {
             showError('Password must be at least 6 characters');
             return;
           }
-          await initiateSignUp(email, password);
-          showSuccess('Verification code sent to your email');
-          setMode('verify');
-          break;
-
-        case 'verify':
-          if (!otp) {
-            showError('Please enter the verification code');
+          if (password !== confirmPassword) {
+            showError('Passwords do not match');
             return;
           }
-          const signUpData = await completeSignUp(email, otp);
-          showSuccess('Email verified and account created!');
-          onAuthSuccess(signUpData.user);
+          await initiateSignUp(email, password);
+          showSuccess('Verification code sent to your email');
+          setCurrentMode("verify");
           break;
-  
-        case 'forgot':
+
+        case "forgot":
           await initiatePasswordReset(email);
           showSuccess('Password reset instructions sent to your email');
           break;
-  
-        case 'reset':
+
+        case "reset":
           if (!newPassword || newPassword.length < 6) {
             showError('New password must be at least 6 characters');
+            return;
+          }
+          if (newPassword !== confirmNewPassword) {
+            showError('Passwords do not match');
             return;
           }
           if (!resetToken) {
@@ -93,189 +104,318 @@ const AuthForm = ({ onAuthSuccess }) => {
           try {
             await completePasswordReset(newPassword);
             showSuccess('Password reset successful!');
-            setMode('signin');
+            setCurrentMode("signin");
             // Clear the recovery token from storage
             sessionStorage.removeItem('recoveryToken');
-            // Clear the reset token from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
+            resetForm();
           } catch (error) {
             showError(error.message || 'Failed to reset password');
           }
           break;
+
+        case "verify":
+          if (!verificationCode) {
+            showError('Please enter the verification code');
+            return;
+          }
+          const signUpData = await completeSignUp(email, verificationCode);
+          showSuccess('Email verified and account created!');
+          if (onAuthSuccess) {
+            onAuthSuccess(signUpData.user);
+          }
+          setCurrentMode("signin");
+          resetForm();
+          break;
+
+        default:
+          break;
       }
     } catch (error) {
-      showError(error.message);
+      showError(error.message || 'An error occurred. Please try again.');
+    }
+  };
+
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setPhoneNumber("");
+    setVerificationCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowPassword(false);
+    setResetToken("");
+  };
+
+  const switchMode = (mode) => {
+    setCurrentMode(mode);
+    if (mode === "signin" || mode === "signup") {
+      resetForm();
     }
   };
 
   const handleBackToSignIn = () => {
-    setMode('signin');
+    setCurrentMode('signin');
     setResetToken('');
     // Clear any stored tokens
     sessionStorage.removeItem('recoveryToken');
     // Clear the reset token from URL when going back to sign in
     window.history.replaceState({}, document.title, window.location.pathname);
+    resetForm();
+  };
+
+  const getTitle = () => {
+    switch (currentMode) {
+      case "signin": return "Welcome Back";
+      case "signup": return "Create Account";
+      case "forgot": return "Forgot Password";
+      case "reset": return "Reset Password";
+      case "verify": return "Verify Account";
+      default: return "Welcome Back";
+    }
+  };
+
+  const getSubtitle = () => {
+    switch (currentMode) {
+      case "signin": return "Welcome back! Please enter your details.";
+      case "signup": return "Please fill in your details to create an account.";
+      case "forgot": return "Enter your email to receive reset instructions.";
+      case "reset": return "Enter verification code and your new password.";
+      case "verify": return "Enter the verification code sent to your email.";
+      default: return "Welcome back! Please enter your details.";
+    }
+  };
+
+  const getButtonText = () => {
+    switch (currentMode) {
+      case "signin": return "Log In";
+      case "signup": return "Sign Up";
+      case "forgot": return "Send Reset Instructions";
+      case "reset": return "Reset Password";
+      case "verify": return "Verify Account";
+      default: return "Submit";
+    }
+  };
+
+  const renderForm = () => {
+    switch (currentMode) {
+      case "signin":
+        return (
+          <>
+            <div className="login-input-group">
+              <User className="icon" />
+              <input
+                type="email"
+                placeholder="Enter your username/email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="login-input-group">
+              <Lock className="icon" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </>
+        );
+
+      case "signup":
+        return (
+          <>
+            <div className="login-input-group">
+              <User className="icon" />
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="login-input-group">
+              <Phone className="icon" />
+              <input
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+              />
+            </div>
+            <div className="login-input-group">
+              <Lock className="icon" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <div className="login-input-group">
+              <Lock className="icon" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+          </>
+        );
+
+      case "forgot":
+        return (
+          <div className="login-input-group">
+            <Mail className="icon" />
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+        );
+
+      case "reset":
+        return (
+          <>
+            <div className="login-input-group">
+              <Lock className="icon" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <div className="login-input-group">
+              <Lock className="icon" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Confirm new password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+          </>
+        );
+
+      case "verify":
+        return (
+          <div className="login-input-group">
+            <KeyRound className="icon" />
+            <input
+              type="text"
+              placeholder="Enter verification code"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              required
+              maxLength={6}
+            />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderFooter = () => {
+    switch (currentMode) {
+      case "signin":
+        return (
+          <div className="login-footer">
+            <span>New here?</span>
+            <button type="button" onClick={() => switchMode("signup")}>Sign up</button>
+            <span style={{ margin: '0 10px' }}>•</span>
+            <button type="button" onClick={() => setCurrentMode("forgot")}>
+              Forgot Password?
+            </button>
+          </div>
+        );
+
+      case "signup":
+        return (
+          <div className="signup-footer">
+            <span>Already have an account?</span>
+            <button type="button" onClick={() => switchMode("signin")}>Log in</button>
+          </div>
+        );
+
+      case "forgot":
+      case "verify":
+        return (
+          <div className="login-footer">
+            <span>Remember your password?</span>
+            <button type="button" onClick={() => switchMode("signin")}>Back to Login</button>
+          </div>
+        );
+
+      case "reset":
+        return (
+          <div className="login-footer">
+            <span>Remember your password?</span>
+            <button type="button" onClick={handleBackToSignIn}>Back to Login</button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
-    <div 
-      className="flex items-center justify-center min-h-screen bg-cover bg-center"
-      style={{ 
-        backgroundImage: `url(${bg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100%',
-        height: '100%',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden'
-      }}
-    >
-      <div style={{marginTop:'60px'}} className="w-full max-w-md px-6">
-        <div className="backdrop-blur-sm bg-white/20 rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-800">
-              {mode === 'signin' ? 'Welcome to' : 
-               mode === 'signup' ? 'Join' :
-               mode === 'verify' ? 'Verify Email' :
-               mode === 'forgot' ? 'Reset Password' :
-               'Set New Password'}
-            </h2>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              {mode !== 'verify' && mode !== 'forgot' && mode !== 'reset' && "AI Therapist"}
-            </h1>
-            <p className="text-slate-600">
-              {mode === 'signin' ? 'Supporting your mental wellness' : 
-               mode === 'signup' ? 'Start your wellness journey' :
-               mode === 'verify' ? 'Check your email for the verification code' :
-               mode === 'forgot' ? 'We\'ll send recovery instructions to your email' :
-               'Create a new secure password'}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {(mode !== 'reset') && (
-              <div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required={mode !== 'reset'}
-                  placeholder="Email"
-                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
-                />
-              </div>
-            )}
-
-            {['signin', 'signup'].includes(mode) && (
-              <div className="relative">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="Password"
-                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
-                />
-                <div className="absolute inset-y-0 right-3 flex items-center">
-                  <svg className="h-5 w-5 text-teal-600 opacity-70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 13.5C12.8284 13.5 13.5 12.8284 13.5 12C13.5 11.1716 12.8284 10.5 12 10.5C11.1716 10.5 10.5 11.1716 10.5 12C10.5 12.8284 11.1716 13.5 12 13.5Z" fill="currentColor"/>
-                    <path d="M21.8 11.9C18.3 5.9 5.7 5.9 2.2 11.9C2.07 12.12 2 12.38 2 12.65C2 12.91 2.07 13.17 2.2 13.4C5.7 19.4 18.3 19.4 21.8 13.4C21.93 13.17 22 12.91 22 12.65C22 12.38 21.93 12.12 21.8 11.9Z" fill="currentColor"/>
-                  </svg>
-                </div>
-              </div>
-            )}
-
-            {mode === 'verify' && (
-              <div>
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                  maxLength={6}
-                  placeholder="Verification Code"
-                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
-                />
-              </div>
-            )}
-
-            {mode === 'reset' && (
-              <div>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="New Password"
-                  className="w-full px-4 py-3 rounded-xl bg-white/80 border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 placeholder-slate-400"
-                />
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-            >
-              {mode === 'signin' ? 'Log in' :
-               mode === 'signup' ? 'Sign up' :
-               mode === 'verify' ? 'Verify Email' :
-               mode === 'forgot' ? 'Send Reset Instructions' :
-               'Reset Password'}
+    <div className="login-wrapper">
+      <div className="login-left">
+        <img src={imgpodcasting} alt="Podcasting" className="login-image" />
+      </div>
+      <div className="login-right">
+        <div className={currentMode === "signup" ? "signup-card" : "login-card"}>
+          <h1 className="login-title">{getTitle()}</h1>
+          <p className="login-subtitle">{getSubtitle()}</p>
+          <form onSubmit={handleSubmit} className="login-form">
+            {renderForm()}
+            <button type="submit" className="login-btn">
+              {getButtonText()}
             </button>
-
-            <div className="text-center text-sm mt-6">
-              {mode === 'signin' && (
-                <div className="flex flex-col space-y-3">
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMode('forgot');
-                    }}
-                    className="text-teal-700 hover:text-teal-900"
-                  >
-                    Forgot password?
-                  </a>
-                  <div className="flex items-center justify-center space-x-1 mt-4">
-                    <span className="text-slate-600">Don't have an account?</span>
-                    <a 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setMode('signup');
-                      }}
-                      className="text-teal-700 hover:text-teal-900 font-medium"
-                    >
-                      Sign up
-                    </a>
-                  </div>
-                </div>
-              )}
-              
-              {['signup', 'verify', 'forgot', 'reset'].includes(mode) && (
-                <div className="flex items-center justify-center mt-4">
-                  <span className="text-slate-600">Already have an account?</span>
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleBackToSignIn();
-                    }}
-                    className="text-teal-700 hover:text-teal-900 font-medium ml-1"
-                  >
-                    Log in
-                  </a>
-                </div>
-              )}
-            </div>
+            {renderFooter()}
           </form>
         </div>
       </div>
