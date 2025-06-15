@@ -2,12 +2,19 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/LumayaLogo.png"; // use your logo image
 
-const Navbar = () => {
+const Navbar = ({ user, onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-   const handleLogoClick = () => {
+  const handleLogoClick = () => {
     navigate("/");
+  };
+
+  const handleLogout = () => {
+    setMenuOpen(false); // Close mobile menu
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   return (
@@ -18,17 +25,59 @@ const Navbar = () => {
       </div>
 
       <div className="navbar-links">
-        <button  style={{
-    backgroundColor: "#f8b404",
-    color: "#fff",
-    padding: "8px 16px",
-    border: "none",
-    borderRadius: "6px",
-    fontWeight: "bold",
-    marginRight: "10px",
-    cursor: "pointer",
-    borderRadius:"100px"
-  }} onClick={() => navigate("/auth")}>Get Started</button>
+        {/* Show Chat button only when user is signed in */}
+        {user && (
+          <button 
+            style={{
+              backgroundColor: "#f8b404",
+              color: "#fff",
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "100px",
+              fontWeight: "bold",
+              marginRight: "10px",
+              cursor: "pointer",
+            }} 
+            onClick={() => navigate("/chat")}
+          >
+            Chat
+          </button>
+        )}
+        
+        {/* Conditional rendering based on user authentication */}
+        {user ? (
+          <button  
+            style={{
+              backgroundColor: "#f8b404",
+              color: "#fff",
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "100px",
+              fontWeight: "bold",
+              marginRight: "10px",
+              cursor: "pointer",
+            }} 
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        ) : (
+          <button  
+            style={{
+              backgroundColor: "#f8b404",
+              color: "#fff",
+              padding: "8px 16px",
+              border: "none",
+              borderRadius: "100px",
+              fontWeight: "bold",
+              marginRight: "10px",
+              cursor: "pointer",
+            }} 
+            onClick={() => navigate("/auth")}
+          >
+            Get Started
+          </button>
+        )}
       </div>
 
       <div className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
@@ -38,7 +87,35 @@ const Navbar = () => {
       </div>
 
       <div className={`mobile-menu ${menuOpen ? "show" : ""}`}>
-        <button onClick={() => { setMenuOpen(false); navigate("/auth"); }}>Get Started</button>
+        {/* Show Chat button in mobile menu only when user is signed in */}
+        {user && (
+          <button 
+            onClick={() => { 
+              setMenuOpen(false); 
+              navigate("/chat"); 
+            }}
+          >
+            Chat
+          </button>
+        )}
+        
+        {/* Conditional rendering for mobile menu */}
+        {user ? (
+          <button 
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        ) : (
+          <button 
+            onClick={() => { 
+              setMenuOpen(false); 
+              navigate("/auth"); 
+            }}
+          >
+            Get Started
+          </button>
+        )}
       </div>
     </nav>
   );
