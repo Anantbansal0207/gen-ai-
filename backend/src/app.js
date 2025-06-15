@@ -77,9 +77,9 @@ app.get('/', (req, res) => {
   res.status(200).send('Backend is running successfully!');
   console.log('backend');
 });
-// app.get('/ping', (req, res) => {
-//   res.status(200).send('Server is awake!');
-// });
+app.get('/ping', (req, res) => {
+  res.status(200).send('Server is awake!');
+});
 
 // Global error handler
 app.use((err, req, res, next) => {
