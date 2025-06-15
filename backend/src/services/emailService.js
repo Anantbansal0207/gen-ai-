@@ -166,4 +166,4 @@ ${transactionDetails}
 };
 
 // Export functions
-export { formatTransactionDetails, sendVerificationEmail, sendEmailNotification, sendTrackingStartedEmail, sendWelcomeEmail };
+export { sendVerificationEmail, sendEmailNotification, sendTrackingStartedEmail, sendWelcomeEmail };
