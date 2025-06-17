@@ -541,60 +541,57 @@ async function preprocessUserMessage(message, genAI) {
   };
 }
 
-// Enhanced humanization with therapy-specific touches
-async function refineWithGemini(text) {
+// Enhanced humanization with LLM-driven filler word addition
+async function addFillersWithGemini(text) {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `You are a speech pattern editor specializing in natural filler word placement.
+    const prompt = `You are a speech pattern editor specializing in natural conversational flow.
 
-TASK: Reposition the filler words to sound more natural and conversational.You dont have to add any you have to reposition the filler word to make it more flowing.
+TASK: Add 1-2 filler words to make this text sound more natural and conversational, placing them where they would naturally occur in speech.
 
 RULES:
-1. KEEP all original words - do not add, remove, or change any words except repositioning fillers
-2. PRESERVE the exact meaning, tone, and content
+1. KEEP all original words - do not remove, change, or rephrase any existing content
+2. PRESERVE the exact meaning, tone, and message
 3. DO NOT fix grammar, spelling, or other errors
-4. ONLY move filler words like: um, uh, like, you know, actually, well, so, basically, kind of, sort of
+4. ONLY ADD filler words where they sound natural
 
-NATURAL FILLER PLACEMENT PATTERNS:
-- At natural pause points (before conjunctions, after commas)
-- Before important information or emphasis
-- At clause boundaries
-- After transitional phrases
-- NOT in the middle of core phrases or between articles and nouns
+FILLER WORDS TO USE: um, uh, like, you know, actually, well, so, basically, kind of, sort of, I mean, honestly, literally, right, okay, just, maybe, perhaps, I guess, I think
 
-EXAMPLES:
-Bad: "I was um thinking about this"
-Good: "I was thinking, um, about this" OR "Um, I was thinking about this"
+NATURAL PLACEMENT GUIDELINES:
+- At the beginning of sentences for hesitation: "Um, I think that..."
+- Before important points: "The main issue is, well, quite complex"
+- At natural pause points: "We should, you know, consider this"
+- After transitional phrases: "However, um, there's another aspect"
+- Before explanations: "It's like, when you experience that feeling"
 
-Bad: "The like main issue is"
-Good: "The main issue is, like," OR "Like, the main issue is"
+AVOID:
+- Placing fillers between articles and nouns: "the um book" ❌
+- Breaking up core phrases: "very um important" ❌
+- Overusing fillers (max 1-2 per response)
+- Adding fillers to very short responses (under 15 words)
 
-Bad: "We should you know try this"
-Good: "We should, you know, try this" OR "You know, we should try this"
-
-Original text to refine:
+Original text:
 "${text}"
 
-Return ONLY the text with repositioned fillers - no explanations or additional text.`;
+Return ONLY the text with naturally placed fillers - no explanations or additional text.`;
 
     const result = await model.generateContent(prompt);
-    const refinedText = result.response.text().trim();
-    return refinedText;
+    const enhancedText = result.response.text().trim();
+    return enhancedText;
   } catch (error) {
-    console.error('Error refining with Gemini:', error);
-    return text; // Return original text if refinement fails
+    console.error('Error adding fillers with Gemini:', error);
+    return text; // Return original text if enhancement fails
   }
 }
 
 async function humanizeTherapyResponse(response) {
-
+  // Skip very short responses
   if (response.split(/\s+/).length < 10) {
     return response;
   }
 
   let modifications = 0;
   const MAX_MODIFICATIONS = 2;
-  let fillerAdded = false; // Track if filler insertion occurred
 
   // Typo injection
   if (modifications < MAX_MODIFICATIONS && Math.random() < 0.2) {
@@ -605,9 +602,11 @@ async function humanizeTherapyResponse(response) {
       const typoType = Math.floor(Math.random() * 2);
       let newWord = word;
       if (typoType === 0) {
+        // Character swap
         const pos = Math.floor(Math.random() * (word.length - 2)) + 1;
         newWord = word.substring(0, pos) + word[pos + 1] + word[pos] + word.substring(pos + 2);
       } else {
+        // Character duplication
         const pos = Math.floor(Math.random() * (word.length - 1));
         newWord = word.substring(0, pos) + word[pos] + word.substring(pos);
       }
@@ -628,36 +627,15 @@ async function humanizeTherapyResponse(response) {
     modifications++;
   }
 
-  // Filler insertion
+  // LLM-driven filler word addition
   if (modifications < MAX_MODIFICATIONS && Math.random() < 0.3) {
-    const fillers = ['like', 'um', 'you know', 'I mean', 'actually', 'uh', 'so', 'well', 'literally', 'honestly', 'you see', 'right', 'okay', 'alright', 'sort of', 'kind of', 'just', 'maybe', 'perhaps', 'I guess', 'I suppose', 'I think', 'to be fair', 'at the end of the day', 'to be honest', 'in a way'];
-    const sentences = response.split(/(?<=[.!?])\s+/);
-    let inserted = false;
-    for (let i = 0; i < sentences.length; i++) {
-      if (inserted) break;
-      if (Math.random() < 0.3 && sentences[i].length > 15) {
-        const words = sentences[i].split(' ');
-        const filler = fillers[Math.floor(Math.random() * fillers.length)];
-        const pos = Math.min(2, words.length - 1);
-        words.splice(pos, 0, filler);
-        sentences[i] = words.join(' ');
-        inserted = true;
-        modifications++;
-        fillerAdded = true;
-      }
-    }
-    response = sentences.join(' ');
+    const enhanced = await addFillersWithGemini(response);
+    response = enhanced;
+    modifications++;
   }
 
-  // Only call Gemini refinement if filler word was added.
-  if (fillerAdded) {
-    const refined = await refineWithGemini(response);
-    return refined;
-  } else {
-    return response;
-  }
+  return response;
 }
-
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
 
