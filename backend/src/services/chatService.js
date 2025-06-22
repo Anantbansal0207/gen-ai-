@@ -33,7 +33,7 @@ const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 // Add a new prompt for when user doesn't provide name
 const NAME_REQUEST_PROMPT = `You are a warm, empathetic therapist. The user has been chatting with you for a few messages but hasn't shared their name yet. Gently ask for their name in a natural, therapeutic way. Make it feel like a normal part of getting to know them better, not a requirement. You can also offer to suggest a name they might like to be called during sessions if they prefer not to share their real name. Keep it conversational and supportive.`;
 
-const NAME_SUGGESTION_PROMPT = `You are a warm, empathetic therapist. The user hasn't provided their name in the conversation so far. Based on the conversation context and their communication style, suggest a friendly, neutral name that could work for them during therapy sessions. Ask if they'd like to be called by this name or if they'd prefer to share their own name. Make it feel natural and give them the option to choose something else. Keep it warm and supportive.`;
+const NAME_SUGGESTION_PROMPT = `You are a warm, empathetic therapist. The user hasn't provided their name in the conversation so far. Based on the conversation context and their communication style, suggest a friendly, neutral name that could work for them during therapy sessions.It can be a sarcastic one also like calling her my SHeyla Ask if they'd like to be called by this name or if they'd prefer to share their own name. Make it feel natural and give them the option to choose something else. Keep it warm and supportive.`;
 
 function shouldIncludeNameInContext(sessionMemory, userName) {
   if (!userName) return false;
@@ -249,12 +249,12 @@ Your safety is the priority right now. Please reach out to professional crisis c
           isFirstInteraction = true;
           customPrompt = INTRO_PROMPT;
           console.log('First interaction detected, using introduction prompt');
-        } else if (messageCount >= 1 && messageCount <= 3) {
+        } else if (messageCount >= 1 && messageCount <= 1) {
           // 2nd to 4th message - gently ask for name
           isNameRequest = true;
           customPrompt = NAME_REQUEST_PROMPT;
           console.log(`Name request prompt (message ${messageCount + 1})`);
-        } else if (messageCount >= 4) {
+        } else if (messageCount >= 2) {
           // 5th message or more - suggest a name or proceed without
           isNameSuggestion = true;
           customPrompt = NAME_SUGGESTION_PROMPT;
