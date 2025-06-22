@@ -30,6 +30,11 @@ await initializeConfig();
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
+// Add a new prompt for when user doesn't provide name
+const NAME_REQUEST_PROMPT = `You are a warm, empathetic therapist. The user has been chatting with you for a few messages but hasn't shared their name yet. Gently ask for their name in a natural, therapeutic way. Make it feel like a normal part of getting to know them better, not a requirement. You can also offer to suggest a name they might like to be called during sessions if they prefer not to share their real name. Keep it conversational and supportive.`;
+
+const NAME_SUGGESTION_PROMPT = `You are a warm, empathetic therapist. The user hasn't provided their name in the conversation so far. Based on the conversation context and their communication style, suggest a friendly, neutral name that could work for them during therapy sessions. Ask if they'd like to be called by this name or if they'd prefer to share their own name. Make it feel natural and give them the option to choose something else. Keep it warm and supportive.`;
+
 function shouldIncludeNameInContext(sessionMemory, userName) {
   if (!userName) return false;
   
@@ -220,7 +225,9 @@ Your safety is the priority right now. Please reach out to professional crisis c
       let isOnboarding = false;
       let isWelcomeBack = false;
       let isAutoWelcome = !message || message.trim() === '';
-      let customPrompt = getRandomTherapistPrompt();;
+      let isNameRequest = false;
+      let isNameSuggestion = false;
+      let customPrompt = getRandomTherapistPrompt();
       let userName = null;
 
       // Check if this is a brand new user with no history
@@ -233,23 +240,34 @@ Your safety is the priority right now. Please reach out to professional crisis c
         };
       }
         
-      // Continue with existing conversation logic...
-      // [Include all your existing logic for first interaction, onboarding, etc.]
-      
-      // If user has no profile, this is the first interaction ever
+      // Enhanced logic for handling users without names
       if (!userProfile || !userProfile.name) {
-        isFirstInteraction = true;
-        customPrompt = INTRO_PROMPT;
-        console.log('First interaction detected, using introduction prompt');
+        const messageCount = currentSessionMemory.chat_context.filter(msg => msg.role === 'user').length;
+        
+        if (messageCount === 0) {
+          // First interaction - use intro prompt
+          isFirstInteraction = true;
+          customPrompt = INTRO_PROMPT;
+          console.log('First interaction detected, using introduction prompt');
+        } else if (messageCount >= 1 && messageCount <= 3) {
+          // 2nd to 4th message - gently ask for name
+          isNameRequest = true;
+          customPrompt = NAME_REQUEST_PROMPT;
+          console.log(`Name request prompt (message ${messageCount + 1})`);
+        } else if (messageCount >= 4) {
+          // 5th message or more - suggest a name or proceed without
+          isNameSuggestion = true;
+          customPrompt = NAME_SUGGESTION_PROMPT;
+          console.log(`Name suggestion prompt (message ${messageCount + 1})`);
+        }
       }
-      
       // Check if we're in the onboarding phase
-      if (userProfile && userProfile.name && !userProfile.onboardingComplete && isAutoWelcome) {
+      else if (userProfile && userProfile.name && !userProfile.onboardingComplete && isAutoWelcome) {
         isOnboarding = true;
         isWelcomeBack = true;
         userName = userProfile.name;
         customPrompt = WELCOME_BACK_PROMPT.replace('{userName}', userName);
-          console.log(`Welcome back trigger for returning user ${userName}`);
+        console.log(`Welcome back trigger for returning user ${userName}`);
       } 
       else if(userProfile && userProfile.name && !userProfile.onboardingComplete) {
         isOnboarding = true;
@@ -266,18 +284,10 @@ Your safety is the priority right now. Please reach out to professional crisis c
           customPrompt = WELCOME_BACK_PROMPT.replace('{userName}', userName);
           console.log(`Welcome back trigger for returning user ${userName}`);
         } else {
-          customPrompt = getRandomTherapistPrompt();;
+          customPrompt = getRandomTherapistPrompt();
           console.log(`Personalized conversation for returning user ${userName}`);
         }
       }
-
-      // // Only add user message to context if it's not an auto welcome
-      // if (!isAutoWelcome) {
-      //   currentSessionMemory.chat_context.push({
-      //     role: 'user',
-      //     content: message
-      //   });
-      // }
 
       console.log(`Current Chat Context Length: ${currentSessionMemory.chat_context.length}`);
 
@@ -285,7 +295,7 @@ Your safety is the priority right now. Please reach out to professional crisis c
       let relevantMemories = [];
       let relevantContext = '';
       
-      if (!isFirstInteraction && !isOnboarding && !isWelcomeBack && !isAutoWelcome) {
+      if (!isFirstInteraction && !isOnboarding && !isWelcomeBack && !isAutoWelcome && !isNameRequest && !isNameSuggestion) {
         console.log(`Querying Long-Term Memory for User: ${userId}`);
         relevantMemories = await MemoryService.queryLongTermMemory(userId, message);
         console.log(`Found ${relevantMemories.length} Relevant Memories`);
@@ -303,21 +313,20 @@ Your safety is the priority right now. Please reach out to professional crisis c
       }
 
       // Enhanced user profile handling
-      // Enhanced user profile handling
-if (userName) {
-  // Always include name for auto welcome, otherwise use the existing logic
-  const shouldIncludeName = isAutoWelcome ? true : shouldIncludeNameInContext(currentSessionMemory, userName);
+      if (userName) {
+        // Always include name for auto welcome, otherwise use the existing logic
+        const shouldIncludeName = isAutoWelcome ? true : shouldIncludeNameInContext(currentSessionMemory, userName);
 
-  let userInfo = '';
-  let profileSummary = '';
+        let userInfo = '';
+        let profileSummary = '';
 
-  if (shouldIncludeName) {
-    userInfo = `[CRITICAL CLIENT INFORMATION]
+        if (shouldIncludeName) {
+          userInfo = `[CRITICAL CLIENT INFORMATION]
 The client's name is: ${userName}. Use their name sometimes (30 percent) in your responses. Use their name once in your response in a natural way.`;
-    console.log(`Including instruction to use ${userName}'s name in this response${isAutoWelcome ? ' (auto welcome)' : ''}`);
+          console.log(`Including instruction to use ${userName}'s name in this response${isAutoWelcome ? ' (auto welcome)' : ''}`);
 
-    if (userProfile.onboardingSummary) {
-      profileSummary = `
+          if (userProfile.onboardingSummary) {
+            profileSummary = `
 
 [CLIENT PROFILE - ESSENTIAL CONTEXT]
 ${userProfile.onboardingSummary}
@@ -328,13 +337,13 @@ ${userProfile.onboardingSummary}
 - Remember their history and previous challenges
 - Use this information to personalize your support
 - Show you remember who they are through subtle references`;
-    }
-  } else {
-    console.log(`Excluding name usage for this response`);
-    userInfo = `[CRITICAL CLIENT INFORMATION]
-DO NOT use their name ${userName} in this response anywhere unless specifically asked for it like do you remeber my name .The client's name is: ${userName}.`;
- if (userProfile.onboardingSummary) {
-      profileSummary = `
+          }
+        } else {
+          console.log(`Excluding name usage for this response`);
+          userInfo = `[CRITICAL CLIENT INFORMATION]
+DO NOT use their name ${userName} in this response anywhere unless specifically asked for it like do you remember my name. The client's name is: ${userName}.`;
+          if (userProfile.onboardingSummary) {
+            profileSummary = `
 
 [CLIENT PROFILE - ESSENTIAL CONTEXT]
 ${userProfile.onboardingSummary}
@@ -346,14 +355,14 @@ ${userProfile.onboardingSummary}
 - Remember their history and previous challenges
 - Use this information to personalize your support
 - Show you remember who they are through subtle references`;
-    }
-  }
+          }
+        }
 
-  contextWithMemories.unshift({
-    role: 'user',
-    content: userInfo + profileSummary
-  });
-}
+        contextWithMemories.unshift({
+          role: 'user',
+          content: userInfo + profileSummary
+        });
+      }
 
       // Generate response
       console.log(`Generating response...`);
@@ -364,7 +373,8 @@ ${userProfile.onboardingSummary}
         contextWithMemories,
         customPrompt
       );
-       // Only add user message to context if it's not an auto welcome
+      
+      // Only add user message to context if it's not an auto welcome
       if (!isAutoWelcome) {
         currentSessionMemory.chat_context.push({
           role: 'user',
@@ -402,8 +412,8 @@ ${userProfile.onboardingSummary}
         content: finalResponse
       });
       
-      // Handle name extraction for first interaction
-      if (isFirstInteraction && !userProfile ) {
+      // Enhanced name extraction logic
+      if ((isFirstInteraction || isNameRequest || isNameSuggestion) && !userProfile) {
         const extractedName = await this.extractUserName(message, finalResponse);
         if (extractedName) {
           console.log(`Extracted user name: ${extractedName}`);
@@ -416,6 +426,33 @@ ${userProfile.onboardingSummary}
           // Invalidate cache when profile is updated
           CacheService.invalidateUserProfile(userId);
           userName = extractedName;
+        } else if (isNameSuggestion) {
+          // If no name extracted during suggestion phase, create a default profile to move forward
+          console.log(`No name extracted during suggestion phase, moving to onboarding with default handling`);
+          await MemoryService.saveUserProfile(userId, {
+            name: 'Friend', // Default name
+            onboardingComplete: false,
+            firstSessionDate: new Date().toISOString(),
+            nameNotProvided: true // Flag to indicate user didn't provide name
+          });
+          
+          // Invalidate cache when profile is updated
+          CacheService.invalidateUserProfile(userId);
+          userName = 'Friend';
+        }
+      }
+      
+      // Handle name confirmation for suggested names
+      if (userProfile && userProfile.nameNotProvided && message) {
+        const nameConfirmation = await this.checkNameConfirmation(message, userProfile.name);
+        if (nameConfirmation.confirmed) {
+          console.log(`User confirmed name: ${nameConfirmation.name}`);
+          await MemoryService.updateUserProfile(userId, { 
+            name: nameConfirmation.name,
+            nameNotProvided: false
+          });
+          CacheService.invalidateUserProfile(userId);
+          userName = nameConfirmation.name;
         }
       }
       
@@ -442,50 +479,49 @@ ${userProfile.onboardingSummary}
 
       // Handle summarization for long conversations
       if (currentSessionMemory.chat_context.length > 20 && !isAutoWelcome) {
-  const isSummarizing = true;
-  console.log(`Context length > 20, attempting summarization for Session: ${sessionId}`);
+        const isSummarizing = true;
+        console.log(`Context length > 20, attempting summarization for Session: ${sessionId}`);
 
-  const summarizedContext = await MemoryService.summarizeConversation(currentSessionMemory.chat_context);
+        const summarizedContext = await MemoryService.summarizeConversation(currentSessionMemory.chat_context);
 
-  if (summarizedContext !== currentSessionMemory.chat_context) {
-    currentSessionMemory.chat_context = summarizedContext;
-    console.log(`Summarization complete. New context length: ${currentSessionMemory.chat_context.length}`);
-    
-    // Save and update cache with summarized context
-    await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
-    CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
+        if (summarizedContext !== currentSessionMemory.chat_context) {
+          currentSessionMemory.chat_context = summarizedContext;
+          console.log(`Summarization complete. New context length: ${currentSessionMemory.chat_context.length}`);
+          
+          // Save and update cache with summarized context
+          await MemoryService.saveSessionMemory(sessionId, userId, currentSessionMemory.chat_context);
+          CacheService.updateSessionContext(userId, sessionId, currentSessionMemory.chat_context);
 
-    if (this.shouldSaveToLongTerm(isSummarizing, message, finalResponse)) {
-      console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
+          if (this.shouldSaveToLongTerm(isSummarizing, message, finalResponse)) {
+            console.log(`Saving summarized interaction to long-term memory for User: ${userId}`);
 
-      // ─── Extract *only* the summary text (no “role:” prefixes) ───
-      // summarization always returned an array whose first element is:
-      //   { role: 'user', content: `Previous conversation summary: ${summary}` }
-      // so we strip off the “Previous conversation summary: ” prefix.
-      const fullSummaryEntry = summarizedContext[0].content; 
-      const prefix = 'Previous conversation summary: ';
-      const summaryText = fullSummaryEntry.startsWith(prefix)
-        ? fullSummaryEntry.slice(prefix.length)
-        : fullSummaryEntry;
+            // ─── Extract *only* the summary text (no "role:" prefixes) ───
+            // summarization always returned an array whose first element is:
+            //   { role: 'user', content: `Previous conversation summary: ${summary}` }
+            // so we strip off the "Previous conversation summary: " prefix.
+            const fullSummaryEntry = summarizedContext[0].content; 
+            const prefix = 'Previous conversation summary: ';
+            const summaryText = fullSummaryEntry.startsWith(prefix)
+              ? fullSummaryEntry.slice(prefix.length)
+              : fullSummaryEntry;
 
-      // ─── Now run mood/topic analysis on just `summaryText` ───
-      const mood  = await TopicAnalyzer.analyzeMood(summaryText);
-      const topic = await TopicAnalyzer.analyzeTopic(summaryText);
-      console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
+            // ─── Now run mood/topic analysis on just `summaryText` ───
+            const mood  = await TopicAnalyzer.analyzeMood(summaryText);
+            const topic = await TopicAnalyzer.analyzeTopic(summaryText);
+            console.log(`Determined Mood: ${mood}, Topic: ${topic}`);
 
-      await MemoryService.saveLongTermMemory(userId, {
-        content: summaryText,    
-        response: finalResponse,
-        type: 'summary_interaction',
-        mood: mood,
-        topic: topic
-      });
-    }
-  } else {
-    console.log(`Summarization skipped or failed for Session: ${sessionId}`);
-  }
-}
-
+            await MemoryService.saveLongTermMemory(userId, {
+              content: summaryText,    
+              response: finalResponse,
+              type: 'summary_interaction',
+              mood: mood,
+              topic: topic
+            });
+          }
+        } else {
+          console.log(`Summarization skipped or failed for Session: ${sessionId}`);
+        }
+      }
 
       return {
         response: finalResponse,
@@ -505,6 +541,7 @@ ${userProfile.onboardingSummary}
       throw new Error('Failed to process chat message due to an internal server error.');
     }
   }
+
   static formatContextFromMemories(memories) {
     console.log(`Formatting Context from ${memories ? memories.length : 0} Memories`);
 
@@ -550,6 +587,46 @@ ${userProfile.onboardingSummary}
       return null;
     }
   }
+
+  // New method to check if user confirmed a suggested name
+  static async checkNameConfirmation(userMessage, suggestedName) {
+    try {
+      const confirmationPrompt = `
+      Analyze if the user is confirming, changing, or providing a name in response to a name suggestion.
+      
+      User message: "${userMessage}"
+      Previously suggested name: "${suggestedName}"
+      
+      Return a JSON response with:
+      {
+        "confirmed": true/false,
+        "name": "the name they want to use"
+      }
+      
+      If they confirm the suggested name, use the suggested name.
+      If they provide a different name, use that name.
+      If they don't address the name topic, return confirmed: false.
+      `;
+
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(confirmationPrompt);
+      const responseText = result.response.text().trim();
+      
+      try {
+        const parsed = JSON.parse(responseText);
+        return {
+          confirmed: parsed.confirmed || false,
+          name: parsed.name || suggestedName
+        };
+      } catch (parseError) {
+        console.error('Error parsing name confirmation response:', parseError);
+        return { confirmed: false, name: suggestedName };
+      }
+    } catch (error) {
+      console.error('Error checking name confirmation:', error);
+      return { confirmed: false, name: suggestedName };
+    }
+  }
   
   static async generateOnboardingSummary(chatContext, userName) {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -587,8 +664,9 @@ ${userProfile.onboardingSummary}
       return `${userName} - Basic information captured during onboarding.`;
     }
   }
-  //Not very importan for now
-    static async adminUnblockUser(userId, adminId) {
+
+  // Admin functions (unchanged)
+  static async adminUnblockUser(userId, adminId) {
     try {
       console.log(`👤 Admin ${adminId} attempting to unblock user ${userId}`);
       
@@ -622,7 +700,8 @@ ${userProfile.onboardingSummary}
       };
     }
   }
-    static async getBlockedUsersDetails() {
+
+  static async getBlockedUsersDetails() {
     try {
       const blockedUsers = await MemoryService.getAllBlockedUsers();
       
