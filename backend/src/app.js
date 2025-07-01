@@ -12,7 +12,7 @@ import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import chatRoutes from './routes/chatRoutes.js';
 import { CacheService } from './services/cacheService.js';
-
+import journalRoutes from './routes/journalRoutes.js'
 
 dotenv.config();
 await initializeConfig();
@@ -67,6 +67,7 @@ app.use(bodyParser.json());
 
 // Routes
 app.use('/api/chatbot', chatRoutes);
+app.use('/api/journal', journalRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
