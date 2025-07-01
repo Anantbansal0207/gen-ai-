@@ -1,6 +1,7 @@
 import express from 'express';
 import { JournalService } from '../services/journalService.js';
 import { authenticate } from '../middlewares/authMiddleware.js';
+import { getSupabaseClient } from '../utils/supabase.js';
 
 const router = express.Router();
 
@@ -10,8 +11,10 @@ const router = express.Router();
 router.get('/initial-prompt', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
     
-    const prompt = await JournalService.getInitialPrompt(userId);
+    const prompt = await JournalService.getInitialPrompt(supabaseClient, userId);
     
     res.status(200).json({ 
       prompt
@@ -30,6 +33,8 @@ router.post('/entry', authenticate, async (req, res) => {
   try {
     const { entry, conversationContext, sessionDate } = req.body;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!entry || entry.trim() === '') {
       return res.status(400).json({ error: 'Journal entry content is required' });
@@ -46,6 +51,7 @@ router.post('/entry', authenticate, async (req, res) => {
     }
 
     const journalResponse = await JournalService.processEntry(
+      supabaseClient,
       userId, 
       entry, 
       validatedContext,
@@ -71,6 +77,8 @@ router.get('/summary', authenticate, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!startDate) {
       return res.status(400).json({ error: 'Start date is required' });
@@ -83,7 +91,7 @@ router.get('/summary', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
 
-    const summary = await JournalService.getJournalSummary(userId, start, end);
+    const summary = await JournalService.getJournalSummary(supabaseClient, userId, start, end);
     
     res.status(200).json({
       summary: summary.summary,
@@ -104,13 +112,15 @@ router.get('/entries/:date', authenticate, async (req, res) => {
   try {
     const { date } = req.params;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     const targetDate = new Date(date);
     if (isNaN(targetDate.getTime())) {
       return res.status(400).json({ error: 'Invalid date format' });
     }
 
-    const entries = await JournalService.getEntriesForDate(userId, targetDate);
+    const entries = await JournalService.getEntriesForDate(supabaseClient, userId, targetDate);
     
     res.status(200).json({
       entries
@@ -128,12 +138,14 @@ router.delete('/entry/:entryId', authenticate, async (req, res) => {
   try {
     const { entryId } = req.params;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!entryId) {
       return res.status(400).json({ error: 'Entry ID is required' });
     }
 
-    const result = await JournalService.deleteEntry(userId, entryId);
+    const result = await JournalService.deleteEntry(supabaseClient, userId, entryId);
     
     if (!result.success) {
       return res.status(404).json({ error: 'Journal entry not found or access denied' });
@@ -154,8 +166,10 @@ router.delete('/entry/:entryId', authenticate, async (req, res) => {
 router.get('/stats', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const stats = await JournalService.getJournalStats(userId);
+    const stats = await JournalService.getJournalStats(supabaseClient, userId);
     
     res.status(200).json({
       totalEntries: stats.totalEntries,
@@ -177,12 +191,15 @@ router.get('/search', authenticate, async (req, res) => {
   try {
     const { query, startDate, endDate } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!query || query.trim() === '') {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
     const searchResults = await JournalService.searchEntries(
+      supabaseClient,
       userId, 
       query, 
       startDate ? new Date(startDate) : null,
@@ -207,6 +224,8 @@ router.get('/mood-analysis', authenticate, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!startDate) {
       return res.status(400).json({ error: 'Start date is required' });
@@ -219,7 +238,7 @@ router.get('/mood-analysis', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
 
-    const moodAnalysis = await JournalService.getMoodAnalysis(userId, start, end);
+    const moodAnalysis = await JournalService.getMoodAnalysis(supabaseClient, userId, start, end);
     
     res.status(200).json({
       overallMood: moodAnalysis.overallMood,
@@ -241,6 +260,8 @@ router.get('/export', authenticate, async (req, res) => {
   try {
     const { startDate, endDate, format = 'json' } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!startDate || !endDate) {
       return res.status(400).json({ error: 'Start date and end date are required' });
@@ -253,7 +274,7 @@ router.get('/export', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
 
-    const exportData = await JournalService.exportEntries(userId, start, end, format);
+    const exportData = await JournalService.exportEntries(supabaseClient, userId, start, end, format);
     
     if (format === 'json') {
       res.status(200).json(exportData);
@@ -276,8 +297,10 @@ router.get('/personalized-prompts', authenticate, async (req, res) => {
   try {
     const { count = 5 } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const prompts = await JournalService.getPersonalizedPrompts(userId, parseInt(count));
+    const prompts = await JournalService.getPersonalizedPrompts(supabaseClient, userId, parseInt(count));
     
     res.status(200).json({
       prompts
@@ -294,8 +317,10 @@ router.get('/personalized-prompts', authenticate, async (req, res) => {
 router.get('/streak', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const streakInfo = await JournalService.getWritingStreak(userId);
+    const streakInfo = await JournalService.getWritingStreak(supabaseClient, userId);
     
     res.status(200).json({
       currentStreak: streakInfo.currentStreak,
@@ -317,8 +342,10 @@ router.get('/insights', authenticate, async (req, res) => {
   try {
     const { timeframe = 'month' } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const insights = await JournalService.getJournalInsights(userId, timeframe);
+    const insights = await JournalService.getJournalInsights(supabaseClient, userId, timeframe);
     
     res.status(200).json({
       writingPatterns: insights.writingPatterns,
@@ -342,12 +369,14 @@ router.post('/entry/:entryId/tags', authenticate, async (req, res) => {
     const { entryId } = req.params;
     const { tags } = req.body;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!Array.isArray(tags)) {
       return res.status(400).json({ error: 'Tags must be an array' });
     }
 
-    const result = await JournalService.tagEntry(userId, entryId, tags);
+    const result = await JournalService.tagEntry(supabaseClient, userId, entryId, tags);
     
     res.status(200).json({
       success: true,
@@ -365,8 +394,10 @@ router.post('/entry/:entryId/tags', authenticate, async (req, res) => {
 router.get('/tags', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const tags = await JournalService.getAllTags(userId);
+    const tags = await JournalService.getAllTags(supabaseClient, userId);
     
     res.status(200).json({
       tags
@@ -384,12 +415,15 @@ router.get('/entries/by-tag', authenticate, async (req, res) => {
   try {
     const { tag, startDate, endDate } = req.query;
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
     if (!tag || tag.trim() === '') {
       return res.status(400).json({ error: 'Tag is required' });
     }
 
     const result = await JournalService.getEntriesByTag(
+      supabaseClient,
       userId, 
       tag, 
       startDate ? new Date(startDate) : null,
@@ -414,8 +448,10 @@ router.post('/reminders', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     const reminderSettings = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const result = await JournalService.setReminders(userId, reminderSettings);
+    const result = await JournalService.setReminders(supabaseClient, userId, reminderSettings);
     
     res.status(200).json({
       success: true,
@@ -433,8 +469,10 @@ router.post('/reminders', authenticate, async (req, res) => {
 router.get('/reminders', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
+    const token = req.headers.authorization?.split(' ')[1];
+    const supabaseClient = getSupabaseClient(token);
 
-    const settings = await JournalService.getReminders(userId);
+    const settings = await JournalService.getReminders(supabaseClient, userId);
     
     res.status(200).json({
       settings

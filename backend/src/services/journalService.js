@@ -1,15 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config, initializeConfig } from '../config/index.js';
 
 // Ensure the configuration is loaded before using it
 await initializeConfig();
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
 
 // Initialize Google Generative AI client
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
@@ -18,10 +11,10 @@ export class JournalService {
   /**
    * Get personalized initial prompt based on user's history
    */
-  static async getInitialPrompt(userId) {
+  static async getInitialPrompt(supabaseClient, userId) {
     try {
       // Get recent entries to personalize the prompt
-      const { data: recentEntries } = await supabase
+      const { data: recentEntries } = await supabaseClient
         .from('journal_entries')
         .select('mood, patterns, ai_insight, created_at')
         .eq('user_id', userId)
@@ -63,7 +56,7 @@ export class JournalService {
   /**
    * Process journal entry with AI response and conversation context
    */
-  static async processEntry(userId, entry, conversationContext = [], sessionDate = null) {
+  static async processEntry(supabaseClient, userId, entry, conversationContext = [], sessionDate = null) {
     try {
       // Analyze the entry for mood and patterns
       const analysis = await this.analyzeEntry(entry, conversationContext);
@@ -72,7 +65,7 @@ export class JournalService {
       const aiResponse = await this.generateAIResponse(entry, conversationContext, analysis);
       
       // Save the journal entry to database
-      const savedEntry = await this.saveEntry(userId, entry, analysis, sessionDate);
+      const savedEntry = await this.saveEntry(supabaseClient, userId, entry, analysis, sessionDate);
       
       return {
         response: aiResponse.response,
@@ -257,9 +250,9 @@ export class JournalService {
   /**
    * Save journal entry to database
    */
-  static async saveEntry(userId, content, analysis, sessionDate = null) {
+  static async saveEntry(supabaseClient, userId, content, analysis, sessionDate = null) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('journal_entries')
         .insert([{
           user_id: userId,
@@ -301,9 +294,9 @@ export class JournalService {
   /**
    * Get journal summary for date range using Gemini
    */
-  static async getJournalSummary(userId, startDate, endDate) {
+  static async getJournalSummary(supabaseClient, userId, startDate, endDate) {
     try {
-      const { data: entries, error } = await supabase
+      const { data: entries, error } = await supabaseClient
         .from('journal_entries')
         .select('*')
         .eq('user_id', userId)
@@ -396,7 +389,7 @@ export class JournalService {
   /**
    * Get entries for a specific date
    */
-  static async getEntriesForDate(userId, date) {
+  static async getEntriesForDate(supabaseClient, userId, date) {
     try {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
@@ -404,7 +397,7 @@ export class JournalService {
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('journal_entries')
         .select('*')
         .eq('user_id', userId)
@@ -423,9 +416,9 @@ export class JournalService {
   /**
    * Delete a journal entry
    */
-  static async deleteEntry(userId, entryId) {
+  static async deleteEntry(supabaseClient, userId, entryId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('journal_entries')
         .delete()
         .eq('id', entryId)
@@ -446,9 +439,9 @@ export class JournalService {
   /**
    * Get journal statistics
    */
-  static async getJournalStats(userId) {
+  static async getJournalStats(supabaseClient, userId) {
     try {
-      const { data: entries, error } = await supabase
+      const { data: entries, error } = await supabaseClient
         .from('journal_entries')
         .select('*')
         .eq('user_id', userId)
