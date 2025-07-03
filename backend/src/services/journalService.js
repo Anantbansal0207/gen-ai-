@@ -342,31 +342,54 @@ Generate only the prompt text, nothing else.`;
      * Generate contextual next prompt
      */
     static async generateNextPrompt(analysis, conversationContext = []) {
-        const prompts = {
-            positive: [
-                "That sounds wonderful! What else is bringing you joy today?",
-                "I'm glad you're feeling good. What do you think contributed to this positive mood?",
-                "It's great to hear you're doing well. Is there anything else you'd like to celebrate or reflect on?"
-            ],
-            negative: [
-                "I hear that you're going through a difficult time. Would you like to explore what might help you feel better?",
-                "Thank you for sharing something difficult. What support do you have around you right now?",
-                "It takes courage to express these feelings. What would you tell a friend in a similar situation?"
-            ],
-            mixed: [
-                "It sounds like you're experiencing some complex emotions. Which feeling stands out most to you right now?",
-                "Life can be complicated with mixed feelings. What's most important for you to focus on today?",
-                "I appreciate you sharing these different emotions. What would help bring you more clarity?"
-            ],
-            neutral: [
-                "Thank you for sharing. What else is on your mind that you'd like to explore?",
-                "Is there anything specific you'd like to dive deeper into?",
-                "What other thoughts or experiences have been with you today?"
-            ]
-        };
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-        const moodPrompts = prompts[analysis.mood] || prompts.neutral;
-        return moodPrompts[Math.floor(Math.random() * moodPrompts.length)];
+            // Get the last few messages for context
+            const recentContext = conversationContext.slice(-4).map(msg =>
+                `${msg.role}: ${msg.content}`
+            ).join('\n');
+
+            const prompt = `Based on the user's current emotional state and conversation, generate a thoughtful follow-up question for journaling. 
+
+Current mood analysis:
+- Mood: ${analysis.mood}
+- Mood Score: ${analysis.moodScore}
+- Key emotions: ${analysis.emotions.join(', ')}
+- Insight: ${analysis.insight}
+
+Recent conversation context:
+${recentContext}
+
+Generate a single, compassionate follow-up question that:
+- Is empathetic and supportive
+- Encourages deeper reflection
+- Matches the user's current emotional state
+- Is conversational and warm
+- Avoids being generic or repetitive
+- Is 1-2 sentences maximum
+
+Return only the question, nothing else.`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const aiPrompt = response.text().trim();
+
+            return aiPrompt;
+
+        } catch (error) {
+            console.error('Error generating AI prompt:', error);
+
+            // Fallback prompts based on mood
+            const fallbackPrompts = {
+                positive: "That sounds wonderful! What else is bringing you joy today?",
+                negative: "I hear that you're going through a difficult time. Would you like to explore what might help you feel better?",
+                mixed: "It sounds like you're experiencing some complex emotions. Which feeling stands out most to you right now?",
+                neutral: "Thank you for sharing. What else is on your mind that you'd like to explore?"
+            };
+
+            return fallbackPrompts[analysis.mood] || fallbackPrompts.neutral;
+        }
     }
 
     /**
@@ -405,12 +428,39 @@ Generate only the prompt text, nothing else.`;
     /**
      * Generate a title from content
      */
-    static generateTitle(content) {
-        const words = content.trim().split(/\s+/);
-        if (words.length <= 5) return content;
+    static async generateTitle(content) {
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-        const title = words.slice(0, 5).join(' ');
-        return title.length > 50 ? title.substring(0, 47) + '...' : title + '...';
+            const prompt = `Generate a concise, meaningful title for this journal entry. The title should:
+- Be 3-6 words maximum
+- Capture the main theme or emotion
+- Be descriptive but not too specific
+- Avoid generic phrases like "My Day" or "Today's Entry"
+
+Journal entry: "${content}"
+
+Return only the title, nothing else.`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const aiTitle = response.text().trim();
+
+            // Clean up the title (remove quotes, extra whitespace)
+            const cleanTitle = aiTitle.replace(/['"]/g, '').trim();
+
+            // Fallback to ensure reasonable length
+            return cleanTitle.length > 50 ? cleanTitle.substring(0, 47) + '...' : cleanTitle;
+
+        } catch (error) {
+            console.error('Error generating AI title:', error);
+            // Fallback to original logic if AI fails
+            const words = content.trim().split(/\s+/);
+            if (words.length <= 5) return content;
+
+            const title = words.slice(0, 5).join(' ');
+            return title.length > 50 ? title.substring(0, 47) + '...' : title + '...';
+        }
     }
 
     /**
