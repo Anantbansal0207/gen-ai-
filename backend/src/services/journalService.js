@@ -430,6 +430,8 @@ Return only the question, nothing else.`;
      */
     static async generateTitle(content) {
         try {
+            console.log('Starting title generation for content:', content.substring(0, 100) + '...');
+
             const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
             const prompt = `Generate a concise, meaningful title for this journal entry. The title should:
@@ -442,24 +444,39 @@ Journal entry: "${content}"
 
 Return only the title, nothing else.`;
 
+            console.log('Sending prompt to Gemini for title generation');
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const aiTitle = response.text().trim();
 
+            console.log('Raw AI title response:', aiTitle);
+
             // Clean up the title (remove quotes, extra whitespace)
             const cleanTitle = aiTitle.replace(/['"]/g, '').trim();
+            console.log('Cleaned title:', cleanTitle);
 
             // Fallback to ensure reasonable length
-            return cleanTitle.length > 50 ? cleanTitle.substring(0, 47) + '...' : cleanTitle;
+            const finalTitle = cleanTitle.length > 50 ? cleanTitle.substring(0, 47) + '...' : cleanTitle;
+            console.log('Final title:', finalTitle);
+
+            return finalTitle;
 
         } catch (error) {
             console.error('Error generating AI title:', error);
+            console.log('Falling back to original title generation logic');
+
             // Fallback to original logic if AI fails
             const words = content.trim().split(/\s+/);
-            if (words.length <= 5) return content;
+            if (words.length <= 5) {
+                console.log('Content is short, returning as is:', content);
+                return content;
+            }
 
             const title = words.slice(0, 5).join(' ');
-            return title.length > 50 ? title.substring(0, 47) + '...' : title + '...';
+            const fallbackTitle = title.length > 50 ? title.substring(0, 47) + '...' : title + '...';
+            console.log('Fallback title generated:', fallbackTitle);
+
+            return fallbackTitle;
         }
     }
 
