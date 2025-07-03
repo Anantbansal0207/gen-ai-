@@ -12,45 +12,58 @@ export class JournalService {
      * Get personalized initial prompt based on user's history
      */
     static async getInitialPrompt(supabaseClient, userId) {
-        try {
-            // Get recent entries to personalize the prompt
-            const { data: recentEntries } = await supabaseClient
-                .from('journal_entries')
-                .select('mood, patterns, ai_insight, created_at')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(5);
+    try {
+        console.log(`[getInitialPrompt] Starting prompt generation for user: ${userId}`);
+        
+        // Get recent entries to personalize the prompt
+        const { data: recentEntries } = await supabaseClient
+            .from('journal_entries')
+            .select('mood, patterns, ai_insight, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(5);
+        
+        console.log(`[getInitialPrompt] Found ${recentEntries?.length || 0} recent entries for user ${userId}`);
+        if (recentEntries && recentEntries.length > 0) {
+            console.log('[getInitialPrompt] Recent entries data:', JSON.stringify(recentEntries, null, 2));
+        }
 
-            const fallbackPrompts = [
-                "Welcome back to your journal. What's been on your mind today?",
-                "Hello! How are you feeling right now? What would you like to explore today?",
-                "Good to see you again. What experiences or thoughts would you like to reflect on today?",
-                "Welcome to your personal space. What's happening in your world that you'd like to write about?",
-                "Hi there! What emotions or experiences are you carrying with you today?",
-            ];
+        const fallbackPrompts = [
+            "Welcome back to your journal. What's been on your mind today?",
+            "Hello! How are you feeling right now? What would you like to explore today?",
+            "Good to see you again. What experiences or thoughts would you like to reflect on today?",
+            "Welcome to your personal space. What's happening in your world that you'd like to write about?",
+            "Hi there! What emotions or experiences are you carrying with you today?",
+        ];
 
-            // If user has recent entries, try to generate AI-powered prompt
-            if (recentEntries && recentEntries.length > 0) {
-                try {
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // If user has recent entries, try to generate AI-powered prompt
+        if (recentEntries && recentEntries.length > 0) {
+            console.log('[getInitialPrompt] User has recent entries, attempting AI prompt generation');
+            
+            try {
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                
+                // Calculate days since last entry
+                const lastEntry = recentEntries[0];
+                const daysSinceLastEntry = Math.floor(
+                    (new Date() - new Date(lastEntry.created_at)) / (1000 * 60 * 60 * 24)
+                );
+                
+                console.log(`[getInitialPrompt] Days since last entry: ${daysSinceLastEntry}`);
 
-                    // Calculate days since last entry
-                    const lastEntry = recentEntries[0];
-                    const daysSinceLastEntry = Math.floor(
-                        (new Date() - new Date(lastEntry.created_at)) / (1000 * 60 * 60 * 24)
-                    );
+                // Prepare context from recent entries
+                const entriesContext = recentEntries.map(entry => ({
+                    mood: entry.mood,
+                    patterns: entry.patterns,
+                    ai_insight: entry.ai_insight,
+                    daysSince: Math.floor(
+                        (new Date() - new Date(entry.created_at)) / (1000 * 60 * 60 * 24)
+                    )
+                }));
+                
+                console.log('[getInitialPrompt] Prepared entries context:', JSON.stringify(entriesContext, null, 2));
 
-                    // Prepare context from recent entries
-                    const entriesContext = recentEntries.map(entry => ({
-                        mood: entry.mood,
-                        patterns: entry.patterns,
-                        ai_insight: entry.ai_insight,
-                        daysSince: Math.floor(
-                            (new Date() - new Date(entry.created_at)) / (1000 * 60 * 60 * 24)
-                        )
-                    }));
-
-                    const systemPrompt = `
+                const systemPrompt = `
 You are a compassionate AI assistant helping generate personalized journal prompts. 
 Based on the user's recent journal entries, create a warm, encouraging prompt that:
 1. Acknowledges their recent journaling patterns
@@ -77,26 +90,52 @@ Guidelines:
 
 Generate only the prompt text, nothing else.`;
 
-                    const result = await model.generateContent(systemPrompt);
-                    const response = await result.response;
-                    const aiPrompt = response.text().trim();
+                console.log('[getInitialPrompt] Generated system prompt for AI');
+                console.log('[getInitialPrompt] System prompt length:', systemPrompt.length);
+                
+                console.log('[getInitialPrompt] Calling Gemini AI for prompt generation...');
+                const result = await model.generateContent(systemPrompt);
+                const response = await result.response;
+                const aiPrompt = response.text().trim();
+                
+                console.log('[getInitialPrompt] AI generated prompt:', aiPrompt);
+                console.log('[getInitialPrompt] AI prompt length:', aiPrompt.length);
 
-                    // Validate the generated prompt
-                    if (aiPrompt && aiPrompt.length > 10 && aiPrompt.length < 300) {
-                        return aiPrompt;
-                    }
-                } catch (aiError) {
-                    console.error('AI prompt generation failed, using fallback:', aiError);
+                // Validate the generated prompt
+                if (aiPrompt && aiPrompt.length > 10 && aiPrompt.length < 300) {
+                    console.log('[getInitialPrompt] AI prompt passed validation, returning AI-generated prompt');
+                    return aiPrompt;
+                } else {
+                    console.log('[getInitialPrompt] AI prompt failed validation (length check), falling back to random prompt');
                 }
+            } catch (aiError) {
+                console.error('[getInitialPrompt] AI prompt generation failed:', aiError);
+                console.log('[getInitialPrompt] Error details:', {
+                    message: aiError.message,
+                    stack: aiError.stack
+                });
+                console.log('[getInitialPrompt] Falling back to random prompt due to AI error');
             }
-
-            // Return a random fallback prompt for new users or when AI fails
-            return fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)];
-        } catch (error) {
-            console.error('Error getting initial prompt:', error);
-            return "Welcome to your personal journal space. What's on your mind today?";
+        } else {
+            console.log('[getInitialPrompt] No recent entries found, using fallback prompt');
         }
+
+        // Return a random fallback prompt for new users or when AI fails
+        const selectedPrompt = fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)];
+        console.log('[getInitialPrompt] Selected fallback prompt:', selectedPrompt);
+        return selectedPrompt;
+    } catch (error) {
+        console.error('[getInitialPrompt] Error getting initial prompt:', error);
+        console.log('[getInitialPrompt] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            userId: userId
+        });
+        const fallbackPrompt = "Welcome to your personal journal space. What's on your mind today?";
+        console.log('[getInitialPrompt] Returning emergency fallback prompt:', fallbackPrompt);
+        return fallbackPrompt;
     }
+}
 
     /**
      * Process journal entry with AI response and conversation context
