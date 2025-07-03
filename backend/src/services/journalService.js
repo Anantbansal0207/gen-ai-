@@ -397,11 +397,14 @@ Return only the question, nothing else.`;
      */
     static async saveEntry(supabaseClient, userId, content, analysis, sessionDate = null) {
         try {
+
+            const title = await this.generateTitle(content);
+
             const { data, error } = await supabaseClient
                 .from('journal_entries')
                 .insert([{
                     user_id: userId,
-                    title: this.generateTitle(content),
+                    title: title,
                     content: content.trim(),
                     mood: analysis.mood,
                     mood_score: analysis.moodScore,
