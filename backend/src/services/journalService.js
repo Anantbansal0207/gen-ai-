@@ -12,128 +12,228 @@ export class JournalService {
      * Get personalized initial prompt based on user's history
      */
     static async getInitialPrompt(supabaseClient, userId) {
-        try {
-            console.log(`[getInitialPrompt] Starting prompt generation for user: ${userId}`);
+        // Configuration constants
+        const PROMPT_CONFIG = {
+            MAX_RECENT_ENTRIES: 5,
+            MIN_PROMPT_LENGTH: 10,
+            MAX_PROMPT_LENGTH: 300,
+            AI_RETRY_ATTEMPTS: 2,
+            AI_RETRY_DELAY: 1000,
+            DAYS_THRESHOLDS: {
+                FREQUENT: 0,
+                RECENT: 3,
+                MODERATE: 7,
+                LONG_ABSENCE: 14
+            }
+        };
 
-            // Get recent entries to personalize the prompt
-            const { data: recentEntries } = await supabaseClient
-                .from('journal_entries')
-                .select('mood, patterns, ai_insight, created_at')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(5);
+        const FALLBACK_PROMPTS = {
+            new_user: [
+                "Welcome to your journal. What's been on your mind today?",
+                "Hello! How are you feeling right now? What would you like to explore today?",
+                "Good to see you again. What experiences or thoughts would you like to reflect on today?"
+            ],
+            frequent_journaler: [
+                "You've been journaling consistently - what's emerging for you today?",
+                "Welcome back to your daily reflection. What's calling your attention today?",
+                "Your regular journaling practice continues. What would you like to explore today?"
+            ],
+            returning_user: [
+                "Welcome back to your personal space. What's happening in your world that you'd like to write about?",
+                "It's good to have you back. What thoughts or feelings are you carrying today?",
+                "Welcome back to your reflection practice. What's on your mind today?"
+            ]
+        };
 
-            console.log(`[getInitialPrompt] Found ${recentEntries?.length || 0} recent entries for user ${userId}`);
-            if (recentEntries && recentEntries.length > 0) {
-                console.log('[getInitialPrompt] Recent entries data:', JSON.stringify(recentEntries, null, 2));
+        // Helper function to get fallback prompt
+        const getFallbackPrompt = (userType) => {
+            const prompts = FALLBACK_PROMPTS[userType] || FALLBACK_PROMPTS.new_user;
+            return prompts[Math.floor(Math.random() * prompts.length)];
+        };
+
+        // Helper function to analyze mood pattern
+        const analyzeMoodPattern = (moods) => {
+            if (moods.length === 0) return 'neutral';
+
+            const moodScores = moods.map(mood => {
+                const positive = ['happy', 'excited', 'grateful', 'content', 'peaceful'];
+                const negative = ['sad', 'anxious', 'angry', 'frustrated', 'overwhelmed'];
+
+                if (positive.includes(mood.toLowerCase())) return 1;
+                if (negative.includes(mood.toLowerCase())) return -1;
+                return 0;
+            });
+
+            const avgScore = moodScores.reduce((a, b) => a + b, 0) / moodScores.length;
+
+            if (avgScore > 0.3) return 'positive';
+            if (avgScore < -0.3) return 'challenging';
+            return 'mixed';
+        };
+
+        // Helper function to analyze journaling pattern
+        const analyzeJournalingPattern = (entries) => {
+            if (entries.length < 2) return 'new';
+
+            const dates = entries.map(entry => new Date(entry.created_at));
+            const intervals = [];
+
+            for (let i = 0; i < dates.length - 1; i++) {
+                const daysBetween = Math.floor((dates[i] - dates[i + 1]) / (1000 * 60 * 60 * 24));
+                intervals.push(daysBetween);
             }
 
-            const fallbackPrompts = [
-                "Welcome back to your journal. What's been on your mind today?",
-                "Hello! How are you feeling right now? What would you like to explore today?",
-                "Good to see you again. What experiences or thoughts would you like to reflect on today?",
-                "Welcome to your personal space. What's happening in your world that you'd like to write about?",
-                "Hi there! What emotions or experiences are you carrying with you today?",
-            ];
+            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
 
-            // If user has recent entries, try to generate AI-powered prompt
-            if (recentEntries && recentEntries.length > 0) {
-                console.log('[getInitialPrompt] User has recent entries, attempting AI prompt generation');
+            if (avgInterval <= 2) return 'frequent';
+            if (avgInterval <= 7) return 'regular';
+            return 'sporadic';
+        };
 
-                try {
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Helper function to determine user type
+        const determineUserType = (daysSinceLastEntry, entryCount) => {
+            if (entryCount === 0) return 'new_user';
+            if (daysSinceLastEntry <= PROMPT_CONFIG.DAYS_THRESHOLDS.FREQUENT) return 'frequent_journaler';
+            if (daysSinceLastEntry <= PROMPT_CONFIG.DAYS_THRESHOLDS.MODERATE) return 'returning_user';
+            return 'returning_user';
+        };
 
-                    // Calculate days since last entry
-                    const lastEntry = recentEntries[0];
-                    const daysSinceLastEntry = Math.floor(
-                        (new Date() - new Date(lastEntry.created_at)) / (1000 * 60 * 60 * 24)
-                    );
+        // Helper function to validate prompt
+        const validatePrompt = (prompt) => {
+            return prompt &&
+                prompt.length >= PROMPT_CONFIG.MIN_PROMPT_LENGTH &&
+                prompt.length <= PROMPT_CONFIG.MAX_PROMPT_LENGTH &&
+                !prompt.includes('```') && // No code blocks
+                !prompt.toLowerCase().includes('i cannot') && // No refusals
+                prompt.trim().length > 0;
+        };
 
-                    console.log(`[getInitialPrompt] Days since last entry: ${daysSinceLastEntry}`);
+        // Helper function to build system prompt
+        const buildSystemPrompt = (userContext) => {
+            const { daysSinceLastEntry, moodPattern, journalingPattern, hasRecentPatterns } = userContext;
 
-                    // Prepare context from recent entries
-                    const entriesContext = recentEntries.map(entry => ({
-                        mood: entry.mood,
-                        patterns: entry.patterns,
-                        ai_insight: entry.ai_insight,
-                        daysSince: Math.floor(
-                            (new Date() - new Date(entry.created_at)) / (1000 * 60 * 60 * 24)
-                        )
-                    }));
+            let promptContext = `Create a warm, personalized journal prompt (1-2 sentences) for a user who:
+- Last journaled ${daysSinceLastEntry} days ago
+- Has a ${journalingPattern} journaling pattern
+- Recent mood trend: ${moodPattern}`;
 
-                    console.log('[getInitialPrompt] Prepared entries context:', JSON.stringify(entriesContext, null, 2));
+            if (hasRecentPatterns) {
+                promptContext += `
+- Has been tracking personal patterns and insights`;
+            }
 
-                    const systemPrompt = `
-You are a compassionate AI assistant helping generate personalized journal prompts. 
-Based on the user's recent journal entries, create a warm, encouraging prompt that:
-1. Acknowledges their recent journaling patterns
-2. References relevant themes from their past entries (if any)
-3. Encourages continued self-reflection
-4. Is supportive and non-judgmental
-5. Is 1-2 sentences long
-6. Feels personal but not intrusive
-
-Recent entries context:
-${JSON.stringify(entriesContext, null, 2)}
-
-Days since last entry: ${daysSinceLastEntry}
+            promptContext += `
 
 Guidelines:
-- If it's been 0 days: acknowledge they're journaling frequently
-- If it's been 1-3 days: welcome them back warmly
-- If it's been 4-7 days: gently acknowledge the gap
-- If it's been >7 days: warmly welcome them back after time away
-- Reference mood patterns or insights if they show clear themes
-- Keep it encouraging and forward-looking
-- Don't mention specific personal details from their entries
-- Don't be overly clinical or therapeutic
+- Be warm and encouraging
+- Reference their journaling consistency appropriately
+- Don't mention specific personal details
+- Keep it forward-looking and supportive
+- Generate only the prompt text, nothing else
 
-Generate only the prompt text, nothing else.`;
+Tone based on recent absence:`;
 
-                    console.log('[getInitialPrompt] Generated system prompt for AI');
-                    console.log('[getInitialPrompt] System prompt length:', systemPrompt.length);
+            if (daysSinceLastEntry <= PROMPT_CONFIG.DAYS_THRESHOLDS.FREQUENT) {
+                promptContext += ` Acknowledge their regular practice`;
+            } else if (daysSinceLastEntry <= PROMPT_CONFIG.DAYS_THRESHOLDS.RECENT) {
+                promptContext += ` Welcome them back warmly`;
+            } else if (daysSinceLastEntry <= PROMPT_CONFIG.DAYS_THRESHOLDS.MODERATE) {
+                promptContext += ` Gently acknowledge the gap, be encouraging`;
+            } else {
+                promptContext += ` Warmly welcome them back after time away`;
+            }
 
-                    console.log('[getInitialPrompt] Calling Gemini AI for prompt generation...');
+            return promptContext;
+        };
+
+        // Helper function for delay
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Main function logic
+        try {
+            console.log(`[PromptGenerator] Starting for user: ${userId}`);
+
+            // Fetch recent entries
+            const { data: recentEntries, error } = await supabaseClient
+                .from('journal_entries')
+                .select('mood, patterns, created_at')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(PROMPT_CONFIG.MAX_RECENT_ENTRIES);
+
+            if (error) {
+                console.error('[PromptGenerator] Database error:', error.message);
+                return getFallbackPrompt('new_user');
+            }
+
+            // If no recent entries, return new user prompt
+            if (!recentEntries || recentEntries.length === 0) {
+                return getFallbackPrompt('new_user');
+            }
+
+            // Analyze user context
+            const lastEntry = recentEntries[0];
+            const daysSinceLastEntry = Math.floor(
+                (new Date() - new Date(lastEntry.created_at)) / (1000 * 60 * 60 * 24)
+            );
+
+            const moods = recentEntries.map(entry => entry.mood).filter(Boolean);
+            const moodPattern = analyzeMoodPattern(moods);
+            const journalingPattern = analyzeJournalingPattern(recentEntries);
+            const userType = determineUserType(daysSinceLastEntry, recentEntries.length);
+
+            const userContext = {
+                daysSinceLastEntry,
+                moodPattern,
+                journalingPattern,
+                userType,
+                entryCount: recentEntries.length,
+                hasRecentPatterns: recentEntries.some(entry => entry.patterns)
+            };
+
+            console.log(`[PromptGenerator] User context:`, userContext);
+
+            // Try to generate AI prompt with retry
+            for (let attempt = 1; attempt <= PROMPT_CONFIG.AI_RETRY_ATTEMPTS; attempt++) {
+                try {
+                    console.log(`[PromptGenerator] AI attempt ${attempt}/${PROMPT_CONFIG.AI_RETRY_ATTEMPTS}`);
+
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    const systemPrompt = buildSystemPrompt(userContext);
+
                     const result = await model.generateContent(systemPrompt);
                     const response = await result.response;
                     const aiPrompt = response.text().trim();
 
-                    console.log('[getInitialPrompt] AI generated prompt:', aiPrompt);
-                    console.log('[getInitialPrompt] AI prompt length:', aiPrompt.length);
-
-                    // Validate the generated prompt
-                    if (aiPrompt && aiPrompt.length > 10 && aiPrompt.length < 300) {
-                        console.log('[getInitialPrompt] AI prompt passed validation, returning AI-generated prompt');
+                    if (validatePrompt(aiPrompt)) {
+                        console.log(`[PromptGenerator] Success: AI-generated prompt`);
                         return aiPrompt;
-                    } else {
-                        console.log('[getInitialPrompt] AI prompt failed validation (length check), falling back to random prompt');
                     }
-                } catch (aiError) {
-                    console.error('[getInitialPrompt] AI prompt generation failed:', aiError);
-                    console.log('[getInitialPrompt] Error details:', {
-                        message: aiError.message,
-                        stack: aiError.stack
-                    });
-                    console.log('[getInitialPrompt] Falling back to random prompt due to AI error');
+                } catch (error) {
+                    console.error(`[PromptGenerator] AI attempt ${attempt} failed:`, error.message);
+
+                    if (attempt < PROMPT_CONFIG.AI_RETRY_ATTEMPTS) {
+                        await delay(PROMPT_CONFIG.AI_RETRY_DELAY);
+                    }
                 }
-            } else {
-                console.log('[getInitialPrompt] No recent entries found, using fallback prompt');
             }
 
-            // Return a random fallback prompt for new users or when AI fails
-            const selectedPrompt = fallbackPrompts[Math.floor(Math.random() * fallbackPrompts.length)];
-            console.log('[getInitialPrompt] Selected fallback prompt:', selectedPrompt);
-            return selectedPrompt;
+            // Intelligent fallback based on context
+            console.log(`[PromptGenerator] Using intelligent fallback for ${userType}`);
+
+            if (daysSinceLastEntry > PROMPT_CONFIG.DAYS_THRESHOLDS.LONG_ABSENCE) {
+                return "Welcome back to your journaling practice. What's been happening in your world that you'd like to reflect on?";
+            }
+
+            if (moodPattern === 'challenging') {
+                return "Welcome to your safe space for reflection. What's on your heart today that you'd like to explore?";
+            }
+
+            return getFallbackPrompt(userType);
+
         } catch (error) {
-            console.error('[getInitialPrompt] Error getting initial prompt:', error);
-            console.log('[getInitialPrompt] Error details:', {
-                message: error.message,
-                stack: error.stack,
-                userId: userId
-            });
-            const fallbackPrompt = "Welcome to your personal journal space. What's on your mind today?";
-            console.log('[getInitialPrompt] Returning emergency fallback prompt:', fallbackPrompt);
-            return fallbackPrompt;
+            console.error('[PromptGenerator] Error:', error.message);
+            return getFallbackPrompt('new_user');
         }
     }
 
