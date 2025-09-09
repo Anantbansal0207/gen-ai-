@@ -39,7 +39,7 @@ function FAQComponent() {
     <section className="faq">
       <div>
         <h1 className="faq-main">Real Moments. Real Feelings.</h1>
-        <p className="faq-main">Stories of people who have talked with Lumaya</p>
+        <p className="faq-main2">Stories of people who have talked with Lumaya</p>
       </div>
       {faqs.map((faq, index) => (
         <div key={index} className="faq-item">
@@ -47,11 +47,11 @@ function FAQComponent() {
             {faq.heading}
             <span>{activeIndex === index ? "-" : "+"}</span>
           </div>
-          <div
+          <div 
             ref={(el) => (refs.current[index] = el)}
             className={`faq-answer-wrapper ${activeIndex === index ? "open" : ""}`}
             style={{
-              maxHeight: activeIndex === index ? `${refs.current[index]?.scrollHeight}px` : '0px',
+              maxHeight: activeIndex === index ? `${refs.current[index]?.scrollHeight * 1.1}px` : '0px',
             }}
           >
             <div className="faq-answer">

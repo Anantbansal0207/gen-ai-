@@ -21,7 +21,7 @@ const Navbar = ({ user, onLogout }) => {
     <nav style={{position: 'sticky', top:0, zIndex:'1000'}} className="navbar">
       <div className="navbar-logo" onClick={handleLogoClick} style={{ cursor: "pointer" }}>
         <img style={{transform: 'scale(1)'}} src={logo} alt="Logo" />
-        <span style={{color:'#ffc107', fontSize:'20px'}} className="brand-name">Lumaya</span>
+        <span style={{color:'#ffc107', fontSize:'23px'}} className="brand-name">LUMAYA</span>
       </div>
 
       <div className="navbar-links">

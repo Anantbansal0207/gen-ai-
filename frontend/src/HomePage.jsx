@@ -6,6 +6,7 @@ import FAQComponent from "./FAQComponent";
 import img3 from './assets/LumayaLogo.jpg';
 import Svgmair from "./Svgmair";
 import SvgSecond from "./SvgSecond";
+import { Helmet } from 'react-helmet';
 
 
 const Homepage = () => {
@@ -45,6 +46,22 @@ const Homepage = () => {
   };
 
   return (
+    <>
+
+    <Helmet>
+      <title>Lumaya | Free AI Emotional Support Chat | Private & 24/7</title>
+      <meta 
+        name="description" 
+        content="Talk to Lumaya, your free, private AI companion for emotional support. Always available, non-judgmental, and ready to listen when you need it most." 
+      />
+      <meta property="og:title" content="Lumaya | Free AI Emotional Support Chat | Private & 24/7" />
+      <meta property="og:description" content="Talk to Lumaya, your free, private AI companion for emotional support. Always available, non-judgmental, and ready to listen when you need it most." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://thelumaya.com" />
+      <meta property="og:image" content="https://thelumaya.com/og-image.jpg" />
+      <meta name="twitter:card" content="summary_large_image" />
+    </Helmet>
+
     <div className="container">
       <div className="app">
         <main className="main">
@@ -55,7 +72,7 @@ const Homepage = () => {
 
               <p className="highlight">YOUR MIND, MADE LIGHTER</p>
               <h1 className="title">
-                <strong>
+                <strong className="titles" >
                   Talk. Feel Understood. <TypewriterText text="Grow." speed={200} />
                 </strong>
               </h1>
@@ -131,9 +148,9 @@ const Homepage = () => {
       </section>
 
       {/* Feature Box */}
-      <section className="feature-box">
+      <section className="fifth feature-box">
         <div className="feature-text">
-          <h1 style={{ width: '37vw' }}>Grow emotionally with clarity and confidence.</h1>
+          <h1>Grow emotionally with clarity and confidence.</h1>
           <ul>
             <li>Build emotional resilience, one conversation at a time.</li>
             <li>Clarify your thoughts with kind, guided reflection.</li>
@@ -165,6 +182,7 @@ const Homepage = () => {
         <button className="footers-button" onClick={handleAboutClick}>discover our purpose →</button>
       </footer>
     </div>
+    </>
   );
 };
 

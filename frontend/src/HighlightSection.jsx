@@ -32,7 +32,17 @@ function HighlightSection() {
           {/* <div className="card-number">4.</div> */}
           <h4>Grows With You</h4>
           {/* <p className="subtitle">Heal gently.</p> */}
-          <p className="desc">Lumaya remembers past moods and gently reminds you how far you’ve come.</p>
+          <p className="desc">Lumaya remembers your past moods and gently reminds you how far you’ve truly come on your journey.
+
+
+
+
+
+
+
+
+
+</p>
         </div>
       </div>
 

@@ -27,9 +27,6 @@ body {
   font-weight: 600;
 }
 
-
-
-
 .second {
   margin-top: 0vh;
 }
@@ -54,6 +51,19 @@ body {
 
 .fourth.testimonial p {
   font-size: 17px;
+}
+
+.fifth.feature-box{
+
+}
+
+.fifth.feature-box ul li{
+  font-size: 19px;
+}
+
+.fifth.feature-box h1{
+  font-size: 30px;
+  width: 37vw;
 }
 
 @media(min-width: 1536px) {
@@ -207,6 +217,31 @@ body {
     background-color: #444;
     transform: scale(1.02);
   }
+
+  .hero{
+    max-width: 10000vw;
+    margin-bottom: -100px;
+
+  }
+
+  .hero .tag-main{
+    transform: scale(0.8);
+    max-width: 80vw;
+  }
+
+  .hero .tags{
+    width: 100vw;
+    margin-left: -15vw;
+    margin-top: -40px;
+    margin-bottom: 10px;
+  }
+
+  .hero .titles{
+    font-size: 25px;
+    max-width: 1000vw;
+  }
+
+  
 }
 
 /*-------------- Navbar End---------------- */
@@ -245,6 +280,10 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.titles {
+  font-size: clamp(60px, 3.65vw, 70px);
 }
 
 
@@ -953,6 +992,12 @@ body {
   margin-bottom: 40px;
 }
 
+.feature-text {
+  list-style: none;
+  padding-left: 0;
+}
+
+
 .feature-text h1 {
   margin-bottom: 20px;
   font-size: 25px;
@@ -964,10 +1009,21 @@ body {
   margin-bottom: 20px;
 }
 
+.feature-text li {
+  position: relative;
+  padding-left: 28px; 
+  margin-bottom: 12px;
+}
+
+
 .feature-text li::before {
-  content: "✔️";
-  margin-right: 8px;
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: -10px;
   color: #f6b600;
+  font-size: 40px;
+  line-height: 1;
 }
 
 .cta {
@@ -989,6 +1045,11 @@ body {
 }
 
 .faq-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.faq-main2 {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1085,6 +1146,36 @@ body {
 
 @media (max-width: 768px) {
 
+  .titles {
+  font-size: clamp(19px, 3.65vw, 70px);
+}
+
+  .hero {
+    height: 62vh;
+    margin-top: 3vh;
+  }
+
+   .second.info .info-text {
+    text-align: center;
+    padding: 0 16px; 
+  }
+
+  .second.info .width {
+    width: 100% !important; 
+  }
+
+  .second.info h1 {
+    font-size: 24px;
+  }
+
+  .second.info h4 {
+    font-size: 18px;
+  }
+
+  .second.info p {
+    font-size: 14px;
+  }
+
   .feature-box,
   .footer-cta {
     flex-direction: column;
@@ -1095,6 +1186,35 @@ body {
     padding: 40px 20px;
 
   }
+
+   .fifth.feature-box h1 {
+    text-align: center;
+    width: 65vw;
+    margin: 0 auto; 
+    font-size: 22px; 
+    margin-bottom: 20px;
+  }
+
+  .fifth.feature-box ul li {
+    font-size: 16px;
+}
+
+  .feature-text li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  color: #f6b600;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.feature-text li {
+    position: relative;
+    padding-left: 7px;
+    margin-bottom: 12px;
+}
+
 
   .footer-cta {
     padding: 30px 20px;
@@ -1120,6 +1240,11 @@ body {
     padding: 10px;
   }
 
+    .faq-main2 {
+    text-align: center;
+    padding: 0 20px; 
+  }
+
   .footers-button {
     margin-top: 20px;
   }
@@ -1137,5 +1262,30 @@ body {
   }
   .testimonial p{
     font-size: 20px;
+
+  }
+
+  .highlight-section .cards-container{
+    margin-left : 60px;
+    transform: scale(1.15);
+    margin-top: 20px;
+  }
+
+  .highlight-section .text-content{
+
+    transform: scale(1.2);
+  }
+
+  .faq .faq-main{
+    font-size: 35px;
+    margin-bottom: 7px;
+   
+
+  }
+  .faq .faq-main2{
+    font-size: 20px;
+    margin-bottom: 20px;
+    
+
   }
 }

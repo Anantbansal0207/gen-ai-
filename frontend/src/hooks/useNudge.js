@@ -19,11 +19,13 @@ const getRandomizedTimeout = () => {
   return timeout;
 };
 
-export const useNudge = (sessionId, currentUser, isTyping, input, messages, setMessages) => {
+// Updated to accept isCreatingNewSession parameter
+export const useNudge = (sessionId, currentUser, isTyping, input, messages, setMessages, isCreatingNewSession) => {
   const [isSendingNudge, setIsSendingNudge] = useState(false);
   const inactivityTimerRef = useRef(null);
   const messagesRef = useRef(messages);
   const isSendingNudgeRef = useRef(isSendingNudge);
+  const isCreatingNewSessionRef = useRef(isCreatingNewSession);
   
   // Keep refs updated
   useEffect(() => {
@@ -33,6 +35,10 @@ export const useNudge = (sessionId, currentUser, isTyping, input, messages, setM
   useEffect(() => {
     isSendingNudgeRef.current = isSendingNudge;
   }, [isSendingNudge]);
+
+  useEffect(() => {
+    isCreatingNewSessionRef.current = isCreatingNewSession;
+  }, [isCreatingNewSession]);
 
   const clearInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -45,9 +51,16 @@ export const useNudge = (sessionId, currentUser, isTyping, input, messages, setM
     const currentMessages = messagesRef.current;
     const lastMessage = currentMessages[currentMessages.length - 1];
 
-    if (isTyping || input.trim() !== '' || isSendingNudgeRef.current || !sessionId || !currentUser) {
+    // Added isCreatingNewSession check
+    if (isTyping || 
+        input.trim() !== '' || 
+        isSendingNudgeRef.current || 
+        isCreatingNewSessionRef.current || 
+        !sessionId || 
+        !currentUser) {
       return;
     }
+    
     if (lastMessage && lastMessage.sender === 'ai') {
       const timeSinceLastMessage = Date.now() - new Date(lastMessage.timestamp).getTime();
       if (timeSinceLastMessage < NUDGE_BUFFER_MS) {
@@ -77,7 +90,8 @@ export const useNudge = (sessionId, currentUser, isTyping, input, messages, setM
 
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
-    if (currentUser && sessionId && !isSendingNudgeRef.current) {
+    // Added isCreatingNewSession check
+    if (currentUser && sessionId && !isSendingNudgeRef.current && !isCreatingNewSessionRef.current) {
       const randomTimeout = getRandomizedTimeout();
       inactivityTimerRef.current = setTimeout(handleSendNudge, randomTimeout);
     }
@@ -96,7 +110,8 @@ export const useNudge = (sessionId, currentUser, isTyping, input, messages, setM
         if (lastMessage &&
             lastMessage.sender === 'ai' &&
             lastMessage.type !== 'nudge' &&
-            !isSendingNudgeRef.current)
+            !isSendingNudgeRef.current &&
+            !isCreatingNewSessionRef.current) // Added check here too
         {
           startInactivityTimer();
         }

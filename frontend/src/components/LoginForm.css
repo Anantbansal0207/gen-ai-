@@ -17,7 +17,6 @@
   box-shadow: 0 10px 50px rgba(0, 0, 0, 0.15);
 }
 
-
 .login-left {
   width: 50%;
   background-color: #ffcc34;
@@ -31,6 +30,7 @@
   max-width: 90%;
   height: auto;
 }
+
 .forgot-password-link {
   text-align: right;
   margin-bottom: 1rem;
@@ -58,6 +58,7 @@
   background-color: #fff;
 }
 
+/* LOGIN CARD - Keep all original styling */
 .login-card {
   width: 100%;
   max-width: 400px;
@@ -67,14 +68,18 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
+/* SIGNUP CARD - Optimized for more fields */
 .signup-card {
   width: 100%;
-  max-width: 400px;
-  max-height: 500px;
+  max-width: 480px; /* Wider than login card */
   background: #fff;
-  padding: 1rem;
+  padding: 1.5rem 2rem; /* Balanced padding */
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh; /* Prevent overflow */
+  overflow-y: auto; /* Allow scrolling if needed */
 }
 
 .login-title {
@@ -92,10 +97,26 @@
   text-align: center;
 }
 
+/* Signup specific title and subtitle adjustments */
+.signup-card .login-title {
+  font-size: 26px;
+  margin-bottom: 0.3rem;
+}
+
+.signup-card .login-subtitle {
+  font-size: 14px;
+  margin-bottom: 1.2rem;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
+}
+
+/* Signup form - tighter spacing */
+.signup-card .login-form {
+  gap: 0.8rem;
 }
 
 .login-input-group {
@@ -150,6 +171,12 @@
   background-color: #f5be2d;
 }
 
+/* Signup button spacing */
+.signup-card .login-btn {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .login-footer {
   margin-top: 1rem;
   font-size: 14px;
@@ -157,7 +184,7 @@
 }
 
 .signup-footer {
-  margin-top: 0.2rem;
+  margin-top: 0.5rem;
   font-size: 14px;
   text-align: center;
 }
@@ -180,11 +207,22 @@
   margin-left: 5px;
 }
 
+@media (min-width: 769px) and (max-width: 1530px){
+  .login-card{
+    padding: 0rem;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    transform: scale(0.90);
+  }
+}
+
 @media screen and (max-width: 768px) {
   .login-wrapper {
     flex-direction: column;
-     height: 72vh;
-     box-shadow: none;
+    height: 60vh;
+    box-shadow: none;
   }
 
   .login-left, .login-right {
@@ -197,7 +235,89 @@
   }
 
   .login-card {
-    padding: 1.5rem;
-    height: 80vh;
+    padding: 1rem;
+    width: 90vw;
+    height: auto;
+  }
+
+  .signup-card {
+    width: 95vw;
+    max-width: 500px;
+    height: 60vh;
+    background: #fff;
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+    max-height: 90vh;
+  }
+
+  .signup-card .login-form {
+    gap: 0.6rem;
+  }
+
+  .signup-card .login-title {
+    font-size: 22px;
+    margin-bottom: 0.2rem;
+  }
+
+  .signup-card .login-subtitle {
+    font-size: 13px;
+    margin-bottom: 0.8rem;
+  }
+
+  .login-subtitle {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .login-footer button {
+    background: none;
+    border: none;
+    color: #ffcc34;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 0px;
+  }
+}
+
+/* For very short screens - additional signup optimizations */
+@media (max-height: 650px) {
+  .signup-card {
+    padding: 1rem 1.5rem;
+    max-height: 95vh;
+  }
+  
+  .signup-card .login-form {
+    gap: 0.5rem;
+  }
+  
+  .signup-card .login-title {
+    font-size: 20px;
+    margin-bottom: 0.2rem;
+  }
+  
+  .signup-card .login-subtitle {
+    font-size: 12px;
+    margin-bottom: 0.6rem;
+  }
+  
+  .signup-card .login-btn {
+    padding: 0.7rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0.3rem;
+  }
+}
+
+
+@media (min-width: 769px) and (max-width: 1430px){
+  .signup-card{
+    margin-top: 0px;
+    transform: scale(0.9);
+  }
+  .signup-card .login-title{
+    font-size: 25px;
   }
 }

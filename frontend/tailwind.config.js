@@ -1,8 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/components/AboutUsPage.jsx",
+    "./src/components/ChatGuide.jsx",
+    "./src/components/PrivacyPolicy.jsx",
   ],
   darkMode: 'class',
   theme: {

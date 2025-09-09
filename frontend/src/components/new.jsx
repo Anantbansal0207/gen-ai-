@@ -9,7 +9,8 @@ import {
   Info,
   Menu,
   Send,
-  Square
+  Square,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { useToast } from '../hooks/useToast';
@@ -17,6 +18,7 @@ import { useSession } from '../hooks/useSession';
 import { useMessages } from '../hooks/useMessages';
 import { useNudge } from '../hooks/useNudge';
 import LoadingDots from './LoadingDots';
+import LumayaLogo from '../assets/LumayaLogo.png'
 import './styles.css';
 
 // MessageBubble Component
@@ -59,6 +61,7 @@ const Sidebar = ({
   currentUser,
   sessionId,
   isUserBlocked,
+  isCreatingNewSession,
 }) => {
   const [hoveredMessage, setHoveredMessage] = useState(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -83,7 +86,7 @@ const Sidebar = ({
     };
   }, [isMobileOpen]);
 
-  const userMessages = messages?.filter((message) => 
+  const userMessages = messages?.filter((message) =>
     message.sender === 'user' || message.role === 'user'
   ) || [];
 
@@ -93,6 +96,8 @@ const Sidebar = ({
     const lastSpaceIndex = truncated.lastIndexOf(' ');
     return lastSpaceIndex > 20 ? truncated.slice(0, lastSpaceIndex) : truncated;
   };
+
+  const isNewSessionDisabled = !currentUser || !sessionId || isUserBlocked || isCreatingNewSession;
 
   if (collapsed) {
     return (
@@ -109,14 +114,16 @@ const Sidebar = ({
           <button className="icon-button" onClick={onToggleCollapse}>
             <PanelLeft size={20} />
           </button>
-          <button 
-            className={`icon-button disabled:opacity-50 ${
-              isUserBlocked ? 'cursor-not-allowed' : ''
-            }`}
+          <button
+            className={`icon-button disabled:opacity-50 ${isNewSessionDisabled ? 'cursor-not-allowed' : ''}`}
             onClick={onNewSession}
-            disabled={!currentUser || !sessionId || isUserBlocked}
+            disabled={isNewSessionDisabled}
           >
-            <Plus size={20} />
+            {isCreatingNewSession ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <Plus size={20} />
+            )}
           </button>
         </div>
 
@@ -135,15 +142,17 @@ const Sidebar = ({
               >
                 <PanelLeftClose size={20} />
               </button>
-              <button 
-                className={`new-chat-button disabled:opacity-50 ${
-                  isUserBlocked ? 'cursor-not-allowed' : ''
-                }`}
+              <button
+                className={`new-chat-button disabled:opacity-50 ${isNewSessionDisabled ? 'cursor-not-allowed' : ''}`}
                 onClick={onNewSession}
-                disabled={!currentUser || !sessionId || isUserBlocked}
+                disabled={isNewSessionDisabled}
               >
-                <Plus size={16} style={{ marginRight: '8px' }} />
-                New Session
+                {isCreatingNewSession ? (
+                  <Loader2 size={16} className="animate-spin" style={{ marginRight: '8px' }} />
+                ) : (
+                  <Plus size={16} style={{ marginRight: '8px' }} />
+                )}
+                {isCreatingNewSession ? 'Creating...' : 'New Session'}
               </button>
             </div>
 
@@ -163,12 +172,11 @@ const Sidebar = ({
                     onMouseLeave={() => setHoveredMessage(null)}
                   >
                     <button
-                      className={`message-button ${
-                        hoveredMessage === message.id ? 'hovered' : ''
-                      }`}
+                      className={`message-button ${hoveredMessage === message.id ? 'hovered' : ''
+                        }`}
                       onClick={() => {
                         onScrollToMessage(message.id);
-                        setIsMobileOpen(false); 
+                        setIsMobileOpen(false);
                       }}
                     >
                       <MessageSquare size={16} className="message-icon" />
@@ -204,37 +212,38 @@ const Sidebar = ({
   return (
     <>
       {!isMobileOpen && (
-      <button
-        className="hamburger-button"
-        onClick={() => setIsMobileOpen(true)}
-        aria-label="Open Sidebar">
-         <Menu size={24}  />
-       </button>
+        <button
+          className="hamburger-button"
+          onClick={() => setIsMobileOpen(true)}
+          aria-label="Open Sidebar">
+          <Menu size={24} />
+        </button>
       )}
 
-    {isMobileOpen && (
-      <div className="mobile-overlay" onClick={() => setIsMobileOpen(false)} />
-    )}
+      {isMobileOpen && (
+        <div className="mobile-overlay" onClick={() => setIsMobileOpen(false)} />
+      )}
 
       <div
         ref={sidebarRef}
-        className={`sidebar-container ${
-          isMobileOpen ? 'mobile-open' : ''
-        }`}
+        className={`sidebar-container ${isMobileOpen ? 'mobile-open' : ''
+          }`}
       >
         <div className="sidebar-header">
           <button className="icon-button" onClick={onToggleCollapse}>
             <PanelLeftClose size={20} />
           </button>
-          <button 
-            className={`new-chat-button disabled:opacity-50 ${
-              isUserBlocked ? 'cursor-not-allowed' : ''
-            }`}
+          <button
+            className={`new-chat-button disabled:opacity-50 ${isNewSessionDisabled ? 'cursor-not-allowed' : ''}`}
             onClick={onNewSession}
-            disabled={!currentUser || !sessionId || isUserBlocked}
+            disabled={isNewSessionDisabled}
           >
-            <Plus size={16} style={{ marginRight: '8px' }} />
-            New Session
+            {isCreatingNewSession ? (
+              <Loader2 size={16} className="animate-spin" style={{ marginRight: '8px' }} />
+            ) : (
+              <Plus size={16} style={{ marginRight: '8px' }} />
+            )}
+            {isCreatingNewSession ? 'Creating...' : 'New Session'}
           </button>
         </div>
 
@@ -254,9 +263,8 @@ const Sidebar = ({
                 onMouseLeave={() => setHoveredMessage(null)}
               >
                 <button
-                  className={`message-button ${
-                    hoveredMessage === message.id ? 'hovered' : ''
-                  }`}
+                  className={`message-button ${hoveredMessage === message.id ? 'hovered' : ''
+                    }`}
                   onClick={() => onScrollToMessage(message.id)}
                 >
                   <MessageSquare size={16} className="message-icon" />
@@ -311,10 +319,10 @@ const BlockedNotification = ({ blockInfo, remainingTime }) => {
 };
 
 // ChatArea Component
-const ChatArea = ({ 
-  messages, 
-  onSendMessage, 
-  sidebarCollapsed, 
+const ChatArea = ({
+  messages,
+  onSendMessage,
+  sidebarCollapsed,
   scrollToMessageId,
   isTyping,
   input,
@@ -384,6 +392,53 @@ const ChatArea = ({
     adjustTextareaHeight();
   }, [input]);
 
+  // AUTO-FOCUS FUNCTIONALITY - NEW CODE ADDED HERE
+  // Auto-focus when AI finishes responding
+  useEffect(() => {
+    if (!isTyping && !isAnimatingTyping && !isUserBlocked && textareaRef.current) {
+      const focusTimeout = setTimeout(() => {
+        if (textareaRef.current && !document.activeElement?.matches('input, textarea, button')) {
+          textareaRef.current.focus();
+        }
+      }, 100);
+
+      return () => clearTimeout(focusTimeout);
+    }
+  }, [isTyping, isAnimatingTyping, isUserBlocked]);
+
+  // Focus after AI messages arrive
+  useEffect(() => {
+    if (messages.length > 0 && !isTyping && !isAnimatingTyping && !isUserBlocked) {
+      const lastMessage = messages[messages.length - 1];
+      if ((lastMessage.sender === 'ai' || lastMessage.role === 'assistant') && textareaRef.current) {
+        const focusTimeout = setTimeout(() => {
+          if (textareaRef.current && !document.activeElement?.matches('input, textarea, button')) {
+            textareaRef.current.focus();
+          }
+        }, 200);
+
+        return () => clearTimeout(focusTimeout);
+      }
+    }
+  }, [messages, isTyping, isAnimatingTyping, isUserBlocked]);
+
+  // Initial focus on component mount
+  useEffect(() => {
+    if (!isUserBlocked && textareaRef.current) {
+      const initialFocusTimeout = setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 500);
+
+      return () => clearTimeout(initialFocusTimeout);
+    }
+  }, [isUserBlocked]);
+
+  // Check if we should show empty chat welcome screen
+  // Only show empty screen if no messages AND no typing activity
+  const showEmptyChat = messages.length === 0 && !isTyping && !isAnimatingTyping;
+
   return (
     <div className="chat-area">
       {/* Add typing animation styles */}
@@ -405,31 +460,47 @@ const ChatArea = ({
         .typing-animation {
           position: relative;
         }
+        
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
       `}</style>
-      
+
       {/* Header */}
       <div className="chat-header">
         <div className="header-content">
           <img
-            src="/src/components/Lumaya.png"
+            src={LumayaLogo}
             alt="Lumaya"
+            style={{ marginTop: "-6px", marginBottom: "-6px" }}
             className="header-logo"
             onError={(e) => {
               const img = e.currentTarget;
               if (img.src.includes('/src/components/')) {
-                img.src = './Lumaya.png';
-              } else if (img.src.includes('./Lumaya.png')) {
-                img.src = '/Lumaya.png';
+                img.src = '../assets/LumayaLogo.png';
+              } else if (img.src.includes('../assets/LumayaLogo.png')) {
+                img.src = '../assets/LumayaLogo.png';
               } else {
                 img.style.display = 'none';
                 img.nextElementSibling?.classList.remove('hidden');
               }
             }}
           />
-          <h1 className="header-title hidden" onClick={handleLogoClick} style={{ cursor: "pointer" }}>
+          <h1 className="header-title" onClick={handleLogoClick} style={{ cursor: "pointer", color: '#fab901', fontSize: "21px" }}>
             Lumaya
           </h1>
+
         </div>
+
       </div>
 
       {/* Blocked Notification */}
@@ -439,7 +510,7 @@ const ChatArea = ({
 
       {/* Messages */}
       <div className="chat-messages">
-        {messages.length === 0 ? (
+        {showEmptyChat ? (
           <div className="empty-chat">
             <div className="empty-box">
               <div className="empty-icon">
@@ -514,7 +585,7 @@ const ChatArea = ({
             </div>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="input-form">
           <div className="input-wrapper">
             <textarea
@@ -523,8 +594,8 @@ const ChatArea = ({
               onChange={onInputChange}
               onKeyDown={handleKeyDown}
               placeholder={
-                isUserBlocked 
-                  ? "Access temporarily limited..." 
+                isUserBlocked
+                  ? "Access temporarily limited..."
                   : "Message Lumaya..."
               }
               disabled={isInputDisabled}
@@ -561,15 +632,21 @@ const ChatArea = ({
 // Main ChatInterface Component
 const ChatInterface = ({ user: propUser }) => {
   const { showSuccess, showError } = useToast();
-  
-  const { 
-    sessionId, 
-    currentUser, 
-    hasInitialized, 
-    setHasInitialized, 
-    handleRefreshSession 
+
+  const {
+    sessionId,
+    currentUser,
+    hasInitialized,
+    setHasInitialized,
+    handleRefreshSession
   } = useSession(propUser, showError, showSuccess);
-  
+
+  // State variables - declare isCreatingNewSession before using it in hooks
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [scrollToMessageId, setScrollToMessageId] = useState();
+  const [remainingTime, setRemainingTime] = useState(null);
+  const [isCreatingNewSession, setIsCreatingNewSession] = useState(false);
+
   const {
     messages,
     setMessages,
@@ -584,46 +661,46 @@ const ChatInterface = ({ user: propUser }) => {
     checkBlockExpiry,
     typingMessage,
     isAnimatingTyping
-  } = useMessages(sessionId, currentUser, hasInitialized, setHasInitialized, () => {}, showError);
-  
+  } = useMessages(sessionId, currentUser, hasInitialized, setHasInitialized, () => { }, showError);
+
   const { isSendingNudge, startInactivityTimer, clearInactivityTimer } = useNudge(
     sessionId,
     currentUser,
     isTyping,
     input,
     messages,
-    setMessages
+    setMessages,
+    isCreatingNewSession
   );
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [scrollToMessageId, setScrollToMessageId] = useState();
-  const [remainingTime, setRemainingTime] = useState(null);
 
   // Nudge timer management
   useEffect(() => {
     if (!sessionId) return;
-    
+
     const lastMessage = messages[messages.length - 1];
     if (lastMessage) {
       if ((lastMessage.sender === 'ai' || lastMessage.role === 'assistant') && lastMessage.type !== 'nudge') {
-        if (!isSendingNudge && !isUserBlocked && !isAnimatingTyping) {
+        // Start nudge timer after AI responds (but not after a nudge)
+        if (!isSendingNudge && !isUserBlocked && !isAnimatingTyping && !isCreatingNewSession) {
           startInactivityTimer();
         } else {
           clearInactivityTimer();
         }
       } else if (lastMessage.sender === 'user' || lastMessage.role === 'user') {
+        // Clear timer when user sends a message
         clearInactivityTimer();
       } else if ((lastMessage.sender === 'ai' || lastMessage.role === 'assistant') && lastMessage.type === 'nudge') {
+        // Clear timer after sending a nudge
         clearInactivityTimer();
       }
     } else {
       clearInactivityTimer();
     }
-    
+
     return () => {
       clearInactivityTimer();
     };
-  }, [messages, sessionId, isSendingNudge, isUserBlocked, isAnimatingTyping, startInactivityTimer, clearInactivityTimer]);
+  }, [messages, sessionId, isSendingNudge, isUserBlocked, isAnimatingTyping, isCreatingNewSession, startInactivityTimer, clearInactivityTimer]);
 
   // Block expiry management
   useEffect(() => {
@@ -648,7 +725,7 @@ const ChatInterface = ({ user: propUser }) => {
 
     return () => clearTimeout(timeout);
   }, [isUserBlocked, blockInfo?.blockExpiresAt, checkBlockExpiry, showSuccess]);
-  
+
   // Remaining time countdown
   useEffect(() => {
     if (!isUserBlocked || !blockInfo?.blockExpiresAt) {
@@ -660,15 +737,15 @@ const ChatInterface = ({ user: propUser }) => {
       const now = new Date();
       const expiresAt = new Date(blockInfo.blockExpiresAt);
       const remainingMs = expiresAt - now;
-      
+
       if (remainingMs <= 0) {
         setRemainingTime(null);
         return false;
       }
-      
+
       const hours = Math.floor(remainingMs / (1000 * 60 * 60));
       const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-      
+
       const newTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
       setRemainingTime(newTime);
       return true;
@@ -686,8 +763,23 @@ const ChatInterface = ({ user: propUser }) => {
   }, [isUserBlocked, blockInfo?.blockExpiresAt]);
 
   const handleFullRefresh = async () => {
-    if (await handleRefreshSession()) {
-      clearMessages();
+    if (isCreatingNewSession) return; // Prevent multiple clicks
+    
+    setIsCreatingNewSession(true);
+    try {
+      console.log('Starting new session creation...');
+      const result = await handleRefreshSession();
+      console.log('Session refresh result:', result);
+      if (result) {
+        clearMessages();
+        console.log('Messages cleared successfully');
+      }
+    } catch (error) {
+      console.error('Error creating new session:', error);
+      showError('Failed to create new session. Please try again.');
+    } finally {
+      setIsCreatingNewSession(false);
+      console.log('New session creation process completed');
     }
   };
 
@@ -708,6 +800,7 @@ const ChatInterface = ({ user: propUser }) => {
         currentUser={currentUser}
         sessionId={sessionId}
         isUserBlocked={isUserBlocked}
+        isCreatingNewSession={isCreatingNewSession}
       />
       <ChatArea
         messages={messages}

@@ -15,7 +15,7 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
 
   // Typing animation configuration
   const TYPING_CONFIG = {
-    bufferTime: 0,
+    bufferTime: 50,
     charactersPerSecond: 100,
     punctuationDelay: 60,
   };
@@ -181,6 +181,7 @@ export const useMessages = (sessionId, currentUser, hasInitialized, setHasInitia
     if (!sessionId || !currentUser || isTyping || isUserBlocked) return;
 
     setIsTyping(true);
+    await new Promise(resolve => setTimeout(resolve, 200));
     const requestStartTime = Date.now();
 
     try {

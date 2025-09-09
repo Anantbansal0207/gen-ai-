@@ -1,197 +1,498 @@
-import React from 'react';
-import Footer from './Footer';
+import { Brain, Heart, Shield, Zap, Lock, TrendingUp, Sprout, ArrowRight, Target, MessageCircle } from "lucide-react"
+import '../index.css'
+import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 
-const AboutUsPage = () => {
-  return (
-    <div className="min-h-screen bg-amber-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-amber-50 to-orange-50 py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl lg:text-6xl font-bold text-amber-800 mb-6">
-            About Us
-          </h1>
-          <p className="text-lg lg:text-xl text-amber-700 max-w-3xl mx-auto">
-            Making mental wellness more accessible, relatable, and judgment-free for everyone
-          </p>
-        </div>
-      </section>
-
-      {/* Mission Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-block w-16 h-16 bg-amber-100 rounded-full mb-6 flex items-center justify-center">
-              <div className="text-2xl">🧠</div>
-            </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">Our Mission</h2>
-          </div>
-          <div className="bg-amber-50 rounded-2xl p-8 lg:p-10 border border-amber-200">
-            <p className="text-lg text-gray-700 leading-relaxed text-center">
-              We're a small, passionate team on a mission to make mental wellness more accessible, relatable, and judgment-free — especially for those who may not feel ready (or able) to seek traditional therapy. Our platform acts as a digital wellness companion, designed to bridge the gap between silence and support. It's a space where you can think out loud, reflect on your emotions, and get gentle guidance — anytime, anywhere.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Why We Built This Section */}
-      <section className="py-16 bg-amber-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-block w-16 h-16 bg-amber-200 rounded-full mb-6 flex items-center justify-center">
-                <div className="text-2xl">💭</div>
-              </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Why We Built This</h2>
-              <p className="text-lg text-gray-700 leading-relaxed mb-4">
-                In a world where stress, overthinking, and emotional overwhelm have become daily struggles, many people are turning to tech for relief — but most tools feel robotic, generic, or transactional.
-              </p>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                We wanted to change that. So, we created a system that listens better, responds with empathy, and improves the more you engage with it — without ever compromising your privacy.
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-amber-100">
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <div className="text-amber-600">🤖</div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Not Robotic</h3>
-                    <p className="text-gray-600 text-sm">Genuine, empathetic responses</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <div className="text-amber-600">🎯</div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Personalized</h3>
-                    <p className="text-gray-600 text-sm">Tailored to your unique needs</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <div className="text-amber-600">🔒</div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Private</h3>
-                    <p className="text-gray-600 text-sm">Your data stays completely secure</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-block w-16 h-16 bg-amber-100 rounded-full mb-6 flex items-center justify-center">
-              <div className="text-2xl">💡</div>
-            </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">How It Works</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-amber-50 rounded-2xl p-8 border border-amber-200">
-              <div className="w-12 h-12 bg-amber-200 rounded-xl flex items-center justify-center mb-6">
-                <div className="text-amber-700 text-xl">⚡</div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Advanced Understanding</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Behind the scenes, your companion uses advanced language models trained to understand patterns in how we think and feel.
-              </p>
-            </div>
-            <div className="bg-amber-50 rounded-2xl p-8 border border-amber-200">
-              <div className="w-12 h-12 bg-amber-200 rounded-xl flex items-center justify-center mb-6">
-                <div className="text-amber-700 text-xl">🛡️</div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Privacy First</h3>
-              <p className="text-gray-700 leading-relaxed">
-                The more context you give it, the more personal and helpful it becomes — while always keeping your data encrypted and invisible to any human eyes.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 bg-amber-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">What Makes Us Different</h2>
-            <p className="text-lg text-gray-600">Three pillars that set us apart</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow border border-amber-100">
-              <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
-                <div className="text-2xl">🤝</div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Empathetic Responses</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Unlike generic tools, our system responds with genuine empathy and understanding, making every interaction feel meaningful.
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow border border-amber-100">
-              <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
-                <div className="text-2xl">🔐</div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Complete Privacy</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Your conversations are encrypted and never seen by human eyes. Your privacy is sacred, and we protect it at all costs.
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow border border-amber-100">
-              <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
-                <div className="text-2xl">📈</div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Adaptive Learning</h3>
-              <p className="text-gray-600 leading-relaxed">
-                The more you engage, the better we understand and support your unique journey towards mental wellness.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Our Belief Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-block w-16 h-16 bg-amber-100 rounded-full mb-6 flex items-center justify-center">
-            <div className="text-2xl">🌱</div>
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">Our Belief</h2>
-          <div className="bg-amber-50 rounded-2xl p-8 lg:p-10 border-2 border-amber-200">
-            <p className="text-lg text-gray-700 leading-relaxed mb-8">
-              Everyone deserves a safe space to unpack their mind. Whether you're feeling stuck, burnt out, overwhelmed, or just need to vent — we're here to support you in becoming more grounded and self-aware.
-            </p>
-            <div className="w-16 h-0.5 bg-amber-300 mx-auto mb-6"></div>
-            <p className="text-lg font-medium text-amber-800 italic">
-              "Thank you for trusting us with your thoughts. We're honored to be a small part of your journey."
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-amber-600 to-orange-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-            Ready to Start Your Journey?
-          </h2>
-          <p className="text-xl text-amber-100 mb-8 max-w-2xl mx-auto">
-            Take the first step towards better mental wellness. Your companion is ready to listen, understand, and support you.
-          </p>
-          <button className="bg-white text-amber-700 px-8 py-4 rounded-full text-lg font-semibold hover:bg-amber-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-            Get Started Today →
-          </button>
-        </div>
-      </section>
-
-      {/* <Footer /> */}
-    </div>
-  );
+const styles = {
+  container: {
+    minHeight: '100vh',
+    backgroundColor: 'rgba(254,248,233,255)'
+  },
+  heroSection: {
+    paddingTop: '4rem',
+    paddingBottom: '4rem',
+    backgroundColor: 'rgba(254,248,233,255)'
+  },
+  heroContainer: {
+    maxWidth: '72rem',
+    margin: '0 auto',
+    padding: '0 1rem',
+    textAlign: 'center'
+  },
+  heroSubtitle: {
+    marginBottom: '1.5rem',
+    fontSize: '1.125rem',
+    fontWeight: '500',
+    letterSpacing: '0.025em',
+    color: 'rgb(248, 180, 4)'
+  },
+  heroTitle: {
+    marginBottom: '3rem',
+    fontSize: '3rem',
+    fontWeight: 'bold',
+    color: '#111827'
+  },
+  tagContainer: {
+    marginBottom: '2rem',
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: '0.75rem'
+  },
+  tag: {
+    borderRadius: '9999px',
+    border: '1px solid rgba(248, 180, 4, 0.3)',
+    backgroundColor: 'white',
+    padding: '0.5rem 1rem',
+    fontSize: '0.875rem',
+    color: '#374151'
+  },
+  whiteSection: {
+    backgroundColor: 'white',
+    paddingTop: '5rem',
+    paddingBottom: '5rem'
+  },
+  sectionContainer: {
+    maxWidth: '80rem',
+    margin: '0 auto',
+    padding: '0 1rem'
+  },
+  sectionHeader: {
+    marginBottom: '4rem',
+    textAlign: 'center'
+  },
+  iconContainer: {
+    marginBottom: '1.5rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '9999px',
+    padding: '1rem',
+    backgroundColor: 'rgba(248, 180, 4, 0.1)'
+  },
+  sectionTitle: {
+    marginBottom: '2rem',
+    fontSize: '2.25rem',
+    fontWeight: 'bold',
+    color: '#111827'
+  },
+  missionCard: {
+    borderRadius: '1rem',
+    border: '1px solid rgba(248, 180, 4, 0.2)',
+    padding: '2.5rem',
+    backgroundColor: 'rgba(254,248,233,255)'
+  },
+  missionText: {
+    textAlign: 'center',
+    fontSize: '1.25rem',
+    lineHeight: '1.75',
+    color: '#374151'
+  },
+  highlight: {
+    fontWeight: '600',
+    color: 'rgb(248, 180, 4)'
+  },
+  creamSection: {
+    paddingTop: '5rem',
+    paddingBottom: '5rem',
+    backgroundColor: 'rgba(254,248,233,255)'
+  },
+  gridTwoCol: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '4rem',
+    alignItems: 'center'
+  },
+  textContent: {
+    marginBottom: '0'
+  },
+  paragraph: {
+    fontSize: '1.25rem',
+    lineHeight: '1.75',
+    color: '#374151',
+    marginBottom: '1.5rem'
+  },
+  featureCard: {
+    borderRadius: '1rem',
+    border: '1px solid rgba(248, 180, 4, 0.2)',
+    backgroundColor: 'white',
+    padding: '2rem',
+    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+  },
+  featureItem: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '1.5rem',
+    marginBottom: '2rem'
+  },
+  featureIconContainer: {
+    display: 'flex',
+    height: '3rem',
+    width: '3rem',
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '9999px',
+    backgroundColor: 'rgba(248, 180, 4, 0.1)'
+  },
+  featureTitle: {
+    marginBottom: '0.5rem',
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    color: '#111827'
+  },
+  featureDescription: {
+    color: '#6B7280'
+  },
+  gridThreeCol: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '2rem'
+  },
+  largeIconContainer: {
+    marginBottom: '2rem',
+    display: 'flex',
+    height: '4rem',
+    width: '4rem',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '9999px',
+    backgroundColor: 'rgba(248, 180, 4, 0.1)'
+  },
+  cardTitle: {
+    marginBottom: '1.5rem',
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#111827'
+  },
+  cardText: {
+    fontSize: '1.125rem',
+    lineHeight: '1.75',
+    color: '#6B7280'
+  },
+  beliefCard: {
+    borderRadius: '1rem',
+    border: '2px solid rgba(248, 180, 4, 0.2)',
+    padding: '3rem',
+    backgroundColor: 'rgba(254,248,233,255)'
+  },
+  beliefText: {
+    marginBottom: '2.5rem',
+    fontSize: '1.25rem',
+    lineHeight: '1.75',
+    color: '#374151'
+  },
+  divider: {
+    margin: '0 auto 2rem auto',
+    height: '2px',
+    width: '6rem',
+    backgroundColor: 'rgb(248, 180, 4)'
+  },
+  quote: {
+    fontSize: '1.25rem',
+    fontWeight: '500',
+    fontStyle: 'italic',
+    color: 'rgb(248, 180, 4)'
+  },
+  ctaText: {
+    margin: '0 auto 3rem auto',
+    maxWidth: '48rem',
+    fontSize: '1.25rem',
+    color: '#6B7280'
+  },
+  ctaButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    borderRadius: '9999px',
+    padding: '1rem 2rem',
+    fontSize: '1.125rem',
+    fontWeight: '500',
+    color: 'white',
+    backgroundColor: 'rgb(248, 180, 4)',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'opacity 0.2s'
+  },
+  // Responsive styles
+  '@media (min-width: 768px)': {
+    gridTwoCol: {
+      gridTemplateColumns: '1fr 1fr'
+    },
+    gridThreeCol: {
+      gridTemplateColumns: 'repeat(3, 1fr)'
+    }
+  },
+  '@media (min-width: 1024px)': {
+    heroSection: {
+      paddingTop: '6rem',
+      paddingBottom: '6rem'
+    },
+    heroContainer: {
+      padding: '0 2rem'
+    },
+    heroSubtitle: {
+      fontSize: '1.25rem'
+    },
+    heroTitle: {
+      fontSize: '4.5rem'
+    },
+    sectionContainer: {
+      padding: '0 2rem'
+    },
+    sectionTitle: {
+      fontSize: '3rem'
+    },
+    missionCard: {
+      padding: '3rem'
+    },
+    missionText: {
+      fontSize: '1.5rem'
+    },
+    beliefCard: {
+      padding: '4rem'
+    },
+    beliefText: {
+      fontSize: '1.5rem'
+    },
+    quote: {
+      fontSize: '1.5rem'
+    },
+    ctaText: {
+      fontSize: '1.5rem'
+    }
+  }
 };
 
-export default AboutUsPage;
+const AboutUsPage = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <>
+      <Helmet>
+        <title>About Lumaya | AI Emotional Support That Feels Human</title>
+        <meta name="description" content="Learn how Lumaya was created to offer real emotional support through AI. Our mission is to build trust, empathy, and a safe space for honest conversations." />
+        <meta name="robots" content="index, follow" />
+        <meta property="og:title" content="About Lumaya | AI Emotional Support That Feels Human" />
+        <meta property="og:description" content="Discover Lumaya's mission to make emotional wellness more accessible. Our AI companion listens with empathy, offering secure, private support." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://thelumaya.com/about" />
+        <meta property="og:image" content="https://thelumaya.com/assets/og-image.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="About Lumaya | AI Emotional Support That Feels Human" />
+        <meta name="twitter:description" content="Discover how Lumaya uses AI to offer empathetic support, privacy-first conversations, and a judgment-free zone." />
+        <meta name="twitter:image" content="https://thelumaya.com/assets/og-image.jpg" />
+      </Helmet>
+
+      <div style={styles.container}>
+        
+        {/* Hero Section */}
+        <section style={styles.heroSection}>
+          <div style={styles.heroContainer}>
+            <p style={styles.heroSubtitle}>ABOUT OUR MISSION</p>
+            <h1 style={styles.heroTitle}>About Us</h1>
+            <div style={styles.tagContainer}>
+              <span style={styles.tag}>Mental Wellness</span>
+              <span style={styles.tag}>Accessible Support</span>
+              <span style={styles.tag}>Judgment-Free</span>
+              <span style={styles.tag}>Privacy First</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Mission Section */}
+        <section style={styles.whiteSection}>
+          <div style={styles.sectionContainer}>
+            <div style={styles.sectionHeader}>
+              <div style={styles.iconContainer}>
+                <Heart style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+              </div>
+              <h2 style={styles.sectionTitle}>Our Mission</h2>
+            </div>
+            <div style={styles.missionCard}>
+              <p style={styles.missionText}>
+                We're a small, passionate team on a mission to make mental wellness more accessible, relatable, and
+                judgment-free — especially for those who may not feel ready (or able) to seek traditional therapy. Our
+                platform acts as a <span style={styles.highlight}>digital wellness companion</span>,
+                designed to bridge the gap between silence and support. It's a space where you can think out loud, reflect
+                on your emotions, and get gentle guidance — anytime, anywhere.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Why We Built This Section */}
+        <section style={styles.creamSection}>
+          <div style={styles.sectionContainer}>
+            <div style={{...styles.gridTwoCol, '@media (min-width: 1024px)': {gridTemplateColumns: '1fr 1fr'}}}>
+              <div style={styles.textContent}>
+                <div style={styles.iconContainer}>
+                  <MessageCircle style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+                </div>
+                <h2 style={styles.sectionTitle}>Why We Built This</h2>
+                <div>
+                  <p style={styles.paragraph}>
+                    In a world where stress, overthinking, and emotional overwhelm have become daily struggles, many
+                    people are turning to tech for relief — but most tools feel robotic, generic, or transactional.
+                  </p>
+                  <p style={styles.paragraph}>
+                    We wanted to change that. So, we created a system that listens better, responds with empathy, and
+                    improves the more you engage with it — without ever compromising your privacy.
+                  </p>
+                </div>
+              </div>
+              <div style={styles.featureCard}>
+                <div>
+                  <div style={styles.featureItem}>
+                    <div style={styles.featureIconContainer}>
+                      <Zap style={{height: '1.5rem', width: '1.5rem', color: 'rgb(248, 180, 4)'}} />
+                    </div>
+                    <div>
+                      <h3 style={styles.featureTitle}>Not Robotic</h3>
+                      <p style={styles.featureDescription}>Genuine, empathetic responses that feel human</p>
+                    </div>
+                  </div>
+                  <div style={styles.featureItem}>
+                    <div style={styles.featureIconContainer}>
+                      <Target style={{height: '1.5rem', width: '1.5rem', color: 'rgb(248, 180, 4)'}} />
+                    </div>
+                    <div>
+                      <h3 style={styles.featureTitle}>Personalized</h3>
+                      <p style={styles.featureDescription}>Tailored to your unique needs and journey</p>
+                    </div>
+                  </div>
+                  <div style={{...styles.featureItem, marginBottom: 0}}>
+                    <div style={styles.featureIconContainer}>
+                      <Lock style={{height: '1.5rem', width: '1.5rem', color: 'rgb(248, 180, 4)'}} />
+                    </div>
+                    <div>
+                      <h3 style={styles.featureTitle}>Private</h3>
+                      <p style={styles.featureDescription}>Your data stays completely secure and encrypted</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section style={styles.whiteSection}>
+          <div style={styles.sectionContainer}>
+            <div style={styles.sectionHeader}>
+              <div style={styles.iconContainer}>
+                <Brain style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+              </div>
+              <h2 style={styles.sectionTitle}>How It Works</h2>
+            </div>
+            <div style={{...styles.gridThreeCol, '@media (min-width: 768px)': {gridTemplateColumns: '1fr 1fr'}}}>
+              <div style={{...styles.missionCard, padding: '2.5rem'}}>
+                <div style={styles.largeIconContainer}>
+                  <Zap style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+                </div>
+                <h3 style={styles.cardTitle}>Advanced Understanding</h3>
+                <p style={styles.cardText}>
+                  Behind the scenes, your companion uses advanced language models trained to understand patterns in how we
+                  think and feel.
+                </p>
+              </div>
+              <div style={{...styles.missionCard, padding: '2.5rem'}}>
+                <div style={styles.largeIconContainer}>
+                  <Shield style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+                </div>
+                <h3 style={styles.cardTitle}>Privacy First</h3>
+                <p style={styles.cardText}>
+                  The more context you give it, the more personal and helpful it becomes — while always keeping your data
+                  encrypted and invisible to any human eyes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section style={styles.creamSection}>
+          <div style={styles.sectionContainer}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>What Makes Us Different</h2>
+              <p style={{fontSize: '1.25rem', color: '#6B7280'}}>Three pillars that set us apart</p>
+            </div>
+            <div style={{...styles.gridThreeCol, '@media (min-width: 768px)': {gridTemplateColumns: 'repeat(3, 1fr)'}}}>
+              <div style={styles.featureCard}>
+                <div style={styles.largeIconContainer}>
+                  <Heart style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+                </div>
+                <h3 style={styles.cardTitle}>Empathetic Responses</h3>
+                <p style={styles.cardText}>
+                  Unlike generic tools, our system responds with genuine empathy and understanding, making every
+                  interaction feel meaningful.
+                </p>
+              </div>
+              <div style={styles.featureCard}>
+                <div style={styles.largeIconContainer}>
+                  <Shield style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+                </div>
+                <h3 style={styles.cardTitle}>Complete Privacy</h3>
+                <p style={styles.cardText}>
+                  Your conversations are encrypted and never seen by human eyes. Your privacy is sacred, and we protect it
+                  at all costs.
+                </p>
+              </div>
+              <div style={styles.featureCard}>
+                <div style={styles.largeIconContainer}>
+                  <TrendingUp style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+                </div>
+                <h3 style={styles.cardTitle}>Adaptive Learning</h3>
+                <p style={styles.cardText}>
+                  The more you engage, the better we understand and support your unique journey towards mental wellness.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Our Belief Section */}
+        <section style={styles.whiteSection}>
+          <div style={{...styles.sectionContainer, textAlign: 'center'}}>
+            <div style={styles.iconContainer}>
+              <Sprout style={{height: '2rem', width: '2rem', color: 'rgb(248, 180, 4)'}} />
+            </div>
+            <h2 style={styles.sectionTitle}>Our Belief</h2>
+            <div style={styles.beliefCard}>
+              <p style={styles.beliefText}>
+                Everyone deserves a safe space to unpack their mind. Whether you're feeling stuck, burnt out, overwhelmed,
+                or just need to vent — we're here to support you in becoming more grounded and self-aware.
+              </p>
+              <div style={styles.divider}></div>
+              <blockquote style={styles.quote}>
+                "Thank you for trusting us with your thoughts. We're honored to be a small part of your journey."
+              </blockquote>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section style={styles.creamSection}>
+          <div style={{...styles.sectionContainer, textAlign: 'center'}}>
+            <h2 style={styles.sectionTitle}>Ready to Start Your Journey?</h2>
+            <p style={styles.ctaText}>
+              Take the first step towards better mental wellness. Your companion is ready to listen, understand, and
+              support you.
+            </p>
+            <button 
+              onClick={() => navigate('/chat')} 
+              style={styles.ctaButton}
+              onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.target.style.opacity = '1'}
+            >
+              Start Talking
+              <ArrowRight style={{height: '1.25rem', width: '1.25rem'}} />
+            </button>
+          </div>
+        </section>
+      </div>
+    </>
+  )
+}
+
+export default AboutUsPage

@@ -1,7 +1,27 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 
 const PrivacyPolicyPage = () => {
   return (
+    <>
+     <Helmet>
+        <title>Privacy Policy | How Lumaya Protects Your Data and Conversations</title>
+        <meta 
+          name="description" 
+          content="Your privacy matters. Read how Lumaya securely handles your conversations, protects personal data, and gives you full control over what’s remembered or forgotten." 
+        />
+        <meta name="robots" content="index, follow" />
+        <meta property="og:title" content="Privacy Policy | How Lumaya Protects Your Data and Conversations" />
+        <meta property="og:description" content="Your privacy matters. Read how Lumaya securely handles your conversations, protects personal data, and gives you full control over what’s remembered or forgotten." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://thelumaya.com/privacy" />
+        <meta property="og:image" content="https://thelumaya.com/assets/og-image.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Privacy Policy | How Lumaya Protects Your Data and Conversations" />
+        <meta name="twitter:description" content="Your privacy matters. Read how Lumaya securely handles your conversations, protects personal data, and gives you full control over what’s remembered or forgotten." />
+        <meta name="twitter:image" content="https://thelumaya.com/assets/og-image.jpg" />
+      </Helmet>
+
     <div className="max-w-4xl mx-auto px-4 py-16">
       <h1 className="text-4xl font-bold text-primary mb-8">Privacy Notice for Xryptt</h1>
       <div className="prose prose-lg text-primary/80 space-y-6">
@@ -72,6 +92,7 @@ const PrivacyPolicyPage = () => {
         </section>
       </div>
     </div>
+    </>
   );
 };
 
