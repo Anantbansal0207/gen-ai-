@@ -11,6 +11,8 @@ import sitemapRouter from './routes/sitemap.js';
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import chatRoutes from './routes/chatRoutes.js';
+import { CacheService } from './services/cacheService.js';
+import journalRoutes from './routes/journalRoutes.js'
 
 dotenv.config();
 await initializeConfig();
@@ -36,8 +38,9 @@ app.set('trust proxy', 1);
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://www.xryptt.com', 'https://xryptt.com', 'https://xrypttsaas-1.onrender.com', 'https://xrypttsaas.onrender.com']
-    : 'http://localhost:5173',
+    ? ['https://www.xryptt.com', 'https://xryptt.com', 'https://xrypttsaas-1.onrender.com', 'https://xrypttsaas.onrender.com','https://frontend-ai1.onrender.com','https://thelumaya.com/','https://www.thelumaya.com/','https://thelumaya.com',
+        'https://www.thelumaya.com','http://localhost:5173']
+    : ['http://localhost:5173','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--33edf5bb.local-credentialless.webcontainer-api.io','https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3-ujzq9jau--5173--33edf5bb.local-credentialless.webcontainer-api.io','https://frontend-ai1.onrender.com','https://thelumaya.com/','https://www.thelumaya.com/'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
@@ -51,9 +54,10 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    //sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+   sameSite: 'none',
     maxAge: 24 * 60 * 60 * 1000,
   }
 }));
@@ -63,6 +67,7 @@ app.use(bodyParser.json());
 
 // Routes
 app.use('/api/chatbot', chatRoutes);
+app.use('/api/journal', journalRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
@@ -71,6 +76,7 @@ app.use('/', sitemapRouter);
 // Health check route
 app.get('/', (req, res) => {
   res.status(200).send('Backend is running successfully!');
+  console.log('backend');
 });
 app.get('/ping', (req, res) => {
   res.status(200).send('Server is awake!');
@@ -82,8 +88,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+
+
 // Start the server
 const PORT = config.port || 3000;
+console.log(PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
 const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT'];
 
@@ -119,3 +132,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
   gracefulShutdown('unhandledRejection');
 });
+setInterval(() => {
+  const cleanedCount = CacheService.cleanupExpired();
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`);
+  }
+}, 60 * 60 * 1000); // 1 hour
