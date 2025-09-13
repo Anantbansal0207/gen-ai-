@@ -15,6 +15,13 @@ import ChatGuide from './components/ChatGuide';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import { checkAuthStatus, signOut } from './services/authService.js';
 
+import Dashboard from "./components/Dashboard";
+import Journal from "./components/Journal";
+import Insights from "./components/Insights";
+import Profile from "./components/Profile";
+
+import ProtectedRoute from "./components/ProtectedRoute";
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -208,7 +215,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-200">
-      {location.pathname !== '/chat' && (
+      {location.pathname !== '/chat' && location.pathname!=="/" && (
         <Navbar
           user={user}
           onLogout={handleLogout}
@@ -217,25 +224,32 @@ useEffect(() => {
       )}
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/chat" element={<ChatInterface user={user} />} />
+        <Route path="/" element={ <HomePage />} />
+        <Route path="/chat" element={ <ChatInterface user={user} />} />
         <Route path="/about" element={<AboutUsPage />} />
         <Route path="/chat-guide" element={<ChatGuide />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/dashboard" element={<ProtectedRoute user={user}><Dashboard /></ProtectedRoute>} />
+<Route path="/journal" element={<ProtectedRoute user={user}><Journal /></ProtectedRoute>} />
+<Route path="/insights" element={<ProtectedRoute user={user}><Insights /></ProtectedRoute>} />
+<Route path="/profile" element={<ProtectedRoute user={user}><Profile /></ProtectedRoute>} />
+
+
+
         <Route
   path="/auth"
   element={
-    <div className="mx-auto px-4 py-8">
+    
       <AuthForm onAuthSuccess={handleAuthSuccess} />
-    </div>
+   
   }
 />
 <Route
   path="/authorisation"  
   element={
-    <div className="mx-auto px-4 py-8">
+   
       <AuthForm onAuthSuccess={handleAuthSuccess} />
-    </div>
+    
   }
 />
         <Route path="*" element={<HomePage />} />
@@ -248,7 +262,7 @@ useEffect(() => {
         }}
       />
 
-      {location.pathname !== '/chat' && <Footer />}
+      {location.pathname !== '/chat'  && location.pathname!=="/" && <Footer />}
     </div>
   );
 }
