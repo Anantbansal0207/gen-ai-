@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Menu, 
-  X, 
-  MessageCircle, 
-  LayoutDashboard, 
-  BookOpen, 
-  TrendingUp, 
-  User, 
+import {
+  Menu,
+  X,
+  MessageCircle,
+  LayoutDashboard,
+  BookOpen,
+  TrendingUp,
+  User,
   LogOut,
   ChevronRight,
   Home
@@ -213,7 +213,7 @@ const Navbar = ({ user, onLogout }) => {
         }
       `}</style>
 
-      <motion.nav 
+      <motion.nav
         className="enhanced-navbar sticky top-0 z-50"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -222,16 +222,16 @@ const Navbar = ({ user, onLogout }) => {
         <div className="navbar-container max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo Section */}
-            <motion.div 
+            <motion.div
               className="flex items-center gap-3 cursor-pointer group"
               onClick={handleLogoClick}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <div className="relative">
-                <img 
-                  src={logo} 
-                  alt="Lumaya Logo" 
+                <img
+                  src={logo}
+                  alt="Lumaya Logo"
                   className="enhanced-logo h-10 w-10 rounded-lg transition-all duration-300"
                 />
                 <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-teal-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -242,23 +242,47 @@ const Navbar = ({ user, onLogout }) => {
             </motion.div>
 
             {/* Desktop Navigation */}
-            
+
             <div className=" md:flex items-center gap-2">
               {/* Navigation Links */}
 
-              {user && ( <div className="flex items-center gap-1 mr-4">
-                {navigationItems.map((item) => (
+              {user && (
+                <>
                   <button
-                    key={item.path}
-                    onClick={() => handleNavClick(item.path)}
-                    className="nav-link-enhanced flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-300"
+                    style={{
+                      backgroundColor: "#f8b404",
+                      color: "#fff",
+                      padding: "8px 16px",
+                      border: "none",
+                      borderRadius: "100px",
+                      fontWeight: "bold",
+                      marginRight: "10px",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => navigate("/chat")}
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    Chat
                   </button>
-                ))}
-              </div>)}
-             
+
+                  <button
+                    style={{
+                      backgroundColor: "#667eea", // different color for distinction
+                      color: "#fff",
+                      padding: "8px 16px",
+                      border: "none",
+                      borderRadius: "100px",
+                      fontWeight: "bold",
+                      marginRight: "10px",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => navigate("/selfspace")}
+                  >
+                    Self Space
+                  </button>
+                </>
+              )}
+
+
 
               {/* Action Buttons */}
               {user ? (
@@ -271,7 +295,7 @@ const Navbar = ({ user, onLogout }) => {
                     <span>Chat</span>
                     <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                   </button>
-                  
+
                   <button
                     onClick={handleLogout}
                     className="logout-button-enhanced flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300"
@@ -327,7 +351,7 @@ const Navbar = ({ user, onLogout }) => {
                       <span className="font-medium">{item.label}</span>
                     </motion.button>
                   ))}
-                  
+
                   {/* Chat button for authenticated users */}
                   {user && (
                     <div className="border-t border-white/10 pt-2 mt-4">

@@ -27,3 +27,4 @@ yarn-error.log*
 frontend/vite.config.js.timestamp-*
 
 backend/tempCodeRunnerFile.js
+.env
