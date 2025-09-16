@@ -6,6 +6,7 @@ import { config, initializeConfig } from './config/index.js';
 import emailRoutes from './routes/emailRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
+import selfSpaceRoutes from './routes/selfSpaceRoutes.js';
 import dotenv from 'dotenv';
 import sitemapRouter from './routes/sitemap.js';
 import { createClient } from 'redis';
@@ -14,33 +15,26 @@ import chatRoutes from './routes/chatRoutes.js';
 import { CacheService } from './services/cacheService.js';
 import journalRoutes from './routes/journalRoutes.js'
 
-
 dotenv.config();
 await initializeConfig();
-
 
 // Create and connect a Redis client
 const redisClient = createClient({
  url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
-
 redisClient.on('error', (err) => {
  console.error('Redis Client Error:', err);
 });
 
-
 await redisClient.connect();
 console.log('Redis client connected');
-
 
 // Initialize Express app
 const app = express();
 
-
 // Configure session middleware with Redis store
 app.set('trust proxy', 1);
-
 
 app.use(cors({
  origin: process.env.NODE_ENV === 'production'
@@ -54,7 +48,7 @@ app.use(cors({
        'https://www.thelumaya.com/',
        'https://thelumaya.com',
        'https://www.thelumaya.com',
-       'https://gen-ai-vjqk.onrender.com',  // 👈 ADD THIS LINE - Your deployed frontend
+       'https://gen-ai-vjqk.onrender.com',
        'http://localhost:5173'
      ]
    : [
@@ -64,11 +58,12 @@ app.use(cors({
        'https://frontend-ai1.onrender.com',
        'https://thelumaya.com/',
        'https://www.thelumaya.com/',
-       'https://gen-ai-vjqk.onrender.com'  // 👈 ADD THIS LINE HERE TOO
+       'https://gen-ai-vjqk.onrender.com'
      ],
  methods: ['GET', 'POST', 'PUT', 'DELETE'],
  credentials: true,
 }));
+
 app.use(session({
  store: new RedisStore({
    client: redisClient,
@@ -80,16 +75,13 @@ app.use(session({
  cookie: {
    secure: true,
    httpOnly: true,
-   //sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  sameSite: 'none',
+   sameSite: 'none',
    maxAge: 24 * 60 * 60 * 1000,
  }
 }));
 
-
 // Parse JSON requests
 app.use(bodyParser.json());
-
 
 // Routes
 app.use('/api/chatbot', chatRoutes);
@@ -97,29 +89,24 @@ app.use('/api/journal', journalRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/selfspace', selfSpaceRoutes);
 app.use('/', sitemapRouter);
-
 
 // Health check route
 app.get('/', (req, res) => {
  res.status(200).send('Backend is running successfully!');
  console.log('backend');
 });
+
 app.get('/ping', (req, res) => {
  res.status(200).send('Server is awake!');
 });
-
 
 // Global error handler
 app.use((err, req, res, next) => {
  console.error('Unhandled Error:', err.message);
  res.status(500).json({ error: 'Internal Server Error' });
 });
-
-
-
-
-
 
 // Start the server
 const PORT = config.port || 3000;
@@ -128,22 +115,19 @@ app.listen(PORT, () => {
  console.log(`Server running on port ${PORT}`);
 });
 
-
-
-
 const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT'];
-
 
 async function gracefulShutdown(signal) {
  console.log(`\n${signal} received. Starting graceful shutdown...`);
-  try {
+ 
+ try {
    console.log('Closing main Redis client...');
    await redisClient.quit();
    console.log('Main Redis client closed successfully');
-  
+   
    const otpService = await import('./services/otpService.js');
    await otpService.closeConnection();
-  
+   
    console.log('All connections closed. Shutting down...');
    process.exit(0);
  } catch (error) {
@@ -152,26 +136,23 @@ async function gracefulShutdown(signal) {
  }
 }
 
-
 signals.forEach(signal => {
  process.on(signal, () => gracefulShutdown(signal));
 });
-
 
 process.on('uncaughtException', (error) => {
  console.error('Uncaught Exception:', error);
  gracefulShutdown('uncaughtException');
 });
 
-
 process.on('unhandledRejection', (reason, promise) => {
  console.error('Unhandled Promise Rejection:', reason);
  gracefulShutdown('unhandledRejection');
 });
+
 setInterval(() => {
  const cleanedCount = CacheService.cleanupExpired();
  if (cleanedCount > 0) {
    console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`);
  }
 }, 60 * 60 * 1000); // 1 hour
-
