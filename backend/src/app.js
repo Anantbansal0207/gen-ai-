@@ -6,6 +6,7 @@ import { config, initializeConfig } from './config/index.js';
 import emailRoutes from './routes/emailRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
+import selfSpaceRoutes from './routes/selfSpaceRoutes.js'; // Import new routes
 import dotenv from 'dotenv';
 import sitemapRouter from './routes/sitemap.js';
 import { createClient } from 'redis';
@@ -71,6 +72,7 @@ app.use('/api/journal', journalRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/selfspace', selfSpaceRoutes); // Add Self Space routes
 app.use('/', sitemapRouter);
 
 // Health check route
